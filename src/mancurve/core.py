@@ -20,8 +20,6 @@ import pegelonline_getter as obs
 import data_feeder as df
 from scipy.signal import savgol_filter
 
-from mancurve import __version__
-
 __author__ = "Luis Becker"
 __copyright__ = "Luis Becker"
 __license__ = "mit"
@@ -35,10 +33,12 @@ class combine_curves():
     def __init__(self):
         self.FNULL = open(os.devnull, 'w')
         dirname = os.path.dirname(__file__)
-        self.aim_dir = os.path.join(dirname, 'temp/')
+        self.aim_dir = os.path.abspath('../../data/temp/')
         
     def clear_old_data(self):
-        path  = os.path.join(self.dirname, 'temp/')      
+        path  = os.path.abspath('../../data/temp/')
+        path  = os.path.join(path, '')
+        
         files = os.listdir(path)
         for f in files:
             if f.endswith('.dat') or f.endswith('.txt'):
@@ -47,9 +47,9 @@ class combine_curves():
                 
     def summarize_figures(self):
         import PIL
-        path    = os.path.join(self.dirname, 'figs/')
+        path    = os.path.abspath('../../data/figs/')
         list_im = os.listdir(path) 
-        list_im = [os.path.join(self.dirname, 'figs/' + x) for x in list_im]        
+        list_im = [os.path.abspath('../../data/figs/' + x) for x in list_im]        
         imgs    = [ PIL.Image.open(i) for i in list_im ]
         n = len(list_im)
         # pick the image which is the smallest, 
@@ -63,27 +63,27 @@ class combine_curves():
         
             # save that beautiful picture
             imgs_comb = PIL.Image.fromarray( imgs_comb)
-            outfile   = 'output/combined'+str(i)+'.png'
+            outfile   = os.path.abspath('../../data/output/combined'+str(i)+'.png')
             vert.append(outfile)
-            imgs_comb.save(os.path.join(self.dirname, outfile))    
+            imgs_comb.save(outfile)    
         
         # for a vertical stacking it is simple: use vstack
         imgs    = [ PIL.Image.open(i) for i in vert]
         imgs_comb = np.vstack([np.asarray(i) for i in imgs])
         imgs_comb = PIL.Image.fromarray( imgs_comb)
-        imgs_comb.save('output/combined.png')
+        imgs_comb.save(os.path.abspath('../../data/output/combined.png'))
         
         for x in vert:
             os.remove(x)
           
         # Rename file for log
-        f1 = os.path.join(self.dirname, 'output/combined.png')
-        f2 = os.path.join(self.dirname, 'output/'
+        f1 = os.path.abspath('../../data/output/combined.png')
+        f2 = os.path.abspath('../../data/output/'
                           +dt.datetime.now().strftime('%Y%m%d%H%MZ')+'.png')
         os.rename(f1,f2)
     
     def summarize_data(self):
-        x = glob.glob('./output/*.h5')
+        x = glob.glob(os.path.abspath('../../data/output/*.h5'))
         today = dt.datetime.now().strftime('%Y%m%d')
         new_file = './data/'+today+'.h5'
         new_f = pd.DataFrame()
@@ -124,7 +124,9 @@ class combine_curves():
    
     def get_eformat(self, download = False):
         self.dirname = os.path.dirname(__file__)
-        self.aim_dir = os.path.join(self.dirname, 'temp/')
+        self.aim_dir = os.path.abspath('../../data/temp/')
+        # Add trailing slash
+        self.aim_dir = os.path.join(self.aim_dir, '') 
         
         self.MHW = {}
         self.MNW = {}
@@ -155,9 +157,9 @@ class combine_curves():
             
         if not download:
             # Get Special Event / year / archive
-            files = os.listdir(os.path.join(self.dirname, 'arch/EFORMAT'))
+            files = os.listdir(os.path.abspath('../../data/arch/EFORMAT'))
             pnames = ['pgl' + x[-13:-8] for x in files]
-            files  = [os.path.join(os.path.join(self.dirname, 'arch/EFORMAT'),x) for x in files]           
+            files  = [os.path.join(os.path.abspath('../../data/arch/EFORMAT'),x) for x in files]           
             for idx,source_file in enumerate(files):            
                 shutil.copy2(source_file,self.aim_dir)
                 self.read_NWHW_file(source_file, pnames[idx])
@@ -451,9 +453,13 @@ class combine_curves():
                 
                 # Liegen nans zwischen letzter Beobachtung und erster Vorhersage?
                 while np.isnan(x):
-                    x = self.mos_data[key]['waterlevel'].loc[
+                    try:
+                        x = self.mos_data[key]['waterlevel'].loc[
                             self.po[key].data.index[-1]
                             + dt.timedelta(minutes=i)]
+                    except:
+                        i+=1
+                        continue
                     i+=1
                     
                 # Erste Verschiebung berechnen
@@ -675,7 +681,7 @@ class combine_curves():
         plt.ylabel('Waterlevel')
         plt.title('GPR: ' +key)
         plt.legend(loc="upper right", scatterpoints=1, prop={'size': 6})
-        plt.savefig(os.path.join(self.dirname, 'figs/'+key+'.png'),dpi=96)
+        plt.savefig(os.path.abspath('../../data/figs/'+key+'.png'),dpi=96)
         #plt.show()     
 
         if self.obs_errstate[key] < 1:
@@ -699,13 +705,13 @@ class combine_curves():
         
         store = store.loc[start:
                 self.NWHW[key].index[0] + dt.timedelta(days = 1.5)]
-        store.to_hdf(os.path.join(self.dirname,'output/'+key+'.h5'),
+        store.to_hdf(os.path.abspath('../../data/output/'+key+'.h5'),
                              'CombinedForecastUTC')
 
         plt.close('all')
 
 if __name__ == '__main__':
-    d = False
+    d = True
     #zeitpunkt = dt.datetime(2017,10,29,7,00)
     zeitpunkt = dt.datetime(2020,3,1,9,00)
     
