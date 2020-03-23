@@ -27,15 +27,13 @@ pandas==1.0.3
 pycparser==2.20
 pyOpenSSL==19.1.0
 pyparsing==2.4.6
-PyQt5==5.12.3
-PyQt5-sip==4.19.18
-PyQtWebEngine==5.12.1
+pyqt
 PySocks==1.7.1
 python-dateutil==2.8.1
 pytz==2019.3
 requests==2.23.0
 scipy==1.4.1
 six==1.14.0
-tables==3.6.1
+pytables
 tornado==6.0.4
 urllib3==1.25.7
