@@ -446,7 +446,7 @@ class combine_curves():
                               self.mos_data[key][~self.mos_data[key].index.isin(self.po[key].data.index)]])             
             else:
                 c_df = self.mos_data[key]
-                
+            self.old_mos = self.mos_data[key].copy()  
             # Verschiebung der MOS-Kurve beim Übergang von Beobachtung zu
             # Vorhersage
             first_delta = 0
@@ -471,12 +471,12 @@ class combine_curves():
                                         self.po[key].data.index[-1],
                                         'waterlevel'])
                             
-                if np.isnan(first_delta):
+                if np.isnan(first_delta) or i > 30:
                     first_delta = 0
                 
                 # Wenn Verschiebung sehr groß, dann die NANs auffüllen 
                 # (linear interpoliert), und erst dann Kurven verbinden:
-                if abs(first_delta) > .5:
+                if abs(first_delta) > .5 and i < 60:
                     # Extrapolate
                     odt = (self.po[key].data.at[
                             self.po[key].data.index[-1],
@@ -484,12 +484,12 @@ class combine_curves():
                           self.po[key].data.at[
                                   self.po[key].data.index[-2],
                                   'waterlevel'])
-                    
+          
                     for m in range(i+1):
                         c_df.loc[self.po[key].data.index[-1] 
                         + dt.timedelta(minutes=i-1)] \
                         = (c_df.loc[self.po[key].data.index[-1]] + m*odt)
-           
+                                
             # Kurven zusammenführen und Nans auffüllen
             mos = pd.DataFrame(c_df, index = c_df.index.copy())
             mos = mos.interpolate(method='linear') 
@@ -500,7 +500,7 @@ class combine_curves():
             # Wenn Verschiebung sehr groß, dann nach Interpolationsvorgang
             # die Daten wieder "zurückschieben", da im späteren Schritt
             # die eigentliche Verschiebung stattfindet
-            if abs(first_delta) > .5:
+            if abs(first_delta) > .5 and i < 60:                
                 self.mos_data[key]['waterlevel'].loc[
                         (self.po[key].data.index[-1] +
                          dt.timedelta(minutes=1)):
@@ -531,7 +531,7 @@ class combine_curves():
             mf['IDX']      = np.arange(len(mf.index))
             mf             = mf.dropna()
             self.NWHW[key] = mf.copy()
-            
+                 
             # Manuelle Vorhersage auf MOS HW/NW Zeitpunkt verschieben
             new_index = []
             #if self.mos_errstate[key] < 1:
@@ -544,7 +544,7 @@ class combine_curves():
                     x = mos.iloc[np.max([0,i-150]):i+150,
                                  mos.columns.get_loc('waterlevel')].idxmin()   
                 new_index.append(x)
-                
+                              
             #Reindex manual forecast
             mf.index = new_index
             mf = pd.DataFrame(mf.copy(), index=mos.index.copy(),
@@ -604,7 +604,7 @@ class combine_curves():
             delta = delta.resample('60S').asfreq()   
             delta = delta.interpolate(method='linear')                             
             # Substract difference from mos
-            self.old_mos = mos.copy()         
+            #self.old_mos = mos.copy()         
             
             mos['waterlevel'] = mos['waterlevel'].sub(
                                 delta['waterlevel'], fill_value = 0)       
@@ -666,8 +666,8 @@ class combine_curves():
                    Linewidth=0.5,zorder=0, alpha=.6)
         
         
-        ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .75),
-                     self.NWHW[key].index[0] + dt.timedelta(days = 1.5)])
+        ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .25),
+                     self.NWHW[key].index[-1] + dt.timedelta(days = .25)])
         
         # Format Time axis -> Hours on top, Days at bottom of plot          
         ax.xaxis.set_major_locator(DayLocator())   
