@@ -32,8 +32,8 @@ class Object(object):
 class combine_curves():
     def __init__(self):
         self.FNULL = open(os.devnull, 'w')
-        dirname = os.path.dirname(__file__)
         self.aim_dir = os.path.abspath('../../data/temp/')
+        self.aim_dir = os.path.join(self.aim_dir, '')
         
     def clear_old_data(self):
         path  = os.path.abspath('../../data/temp/')
@@ -44,8 +44,11 @@ class combine_curves():
             if f.endswith('.dat') or f.endswith('.txt'):
                 x = path + f
                 os.remove(x) 
-                
+    
     def summarize_figures(self):
+        '''
+        Optional function to combine all figures into 1 pdf: requires PIL
+        '''
         import PIL
         path    = os.path.abspath('../../data/figs/')
         list_im = os.listdir(path) 
@@ -85,7 +88,7 @@ class combine_curves():
     def summarize_data(self):
         x = glob.glob(os.path.abspath('../../data/output/*.h5'))
         today = dt.datetime.now().strftime('%Y%m%d')
-        new_file = './data/'+today+'.h5'
+        new_file = '../../data/data/'+today+'.h5'
         new_f = pd.DataFrame()
         
         for i in x:
@@ -97,7 +100,7 @@ class combine_curves():
                      key=dt.datetime.now().strftime('T%Y%m%d%H%M'))
            
 
-    def get_current_NWHW(self, download = False,
+    def get_current_NWHW(self, download = True,
                          zeitpunkt = dt.datetime(2020,2,1,12,16)):       
         if download:
             # NWHW
@@ -740,8 +743,7 @@ if __name__ == '__main__':
     print('# Kurven zusammenfügen #')
     x.prepare_data()
     x.clear_old_data()
-    x.summarize_figures()
-    
+    #x.summarize_figures()   
     #x.summarize_data()
     
     print("Total time elapsed: %.1f s" % (time.time() - stime1))
