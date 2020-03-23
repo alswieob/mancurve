@@ -3,14 +3,14 @@ mancurve
 ========
 
 
-Add a short description here!
+Combines observational, MOS-forecast and manual forecast data
+to a smooth curve.
 
 
 Description
 ===========
 
-A longer description of your project goes here...
-
+TBC
 
 Note
 ====
