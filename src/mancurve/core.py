@@ -717,11 +717,10 @@ if __name__ == '__main__':
     d = True
     #zeitpunkt = dt.datetime(2017,10,29,7,00)
     zeitpunkt = dt.datetime(2020,3,1,9,00)
-    
+    stime1 = time.time()
     x = combine_curves()
     
-    print('# GET DATA #')
-    stime1 = time.time()
+    print('# GET DATA #')   
     
     x.get_current_NWHW(download = d,zeitpunkt = zeitpunkt)
     x.read_NWHW()
