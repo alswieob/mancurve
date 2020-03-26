@@ -183,12 +183,12 @@ class combine_curves():
 
     def get_mos(self, download = False,zeitpunkt = dt.datetime(2020,2,1,12,16)):
         self.mos_data = {}
+        self.old_mos = {}
         #self.ast_data = {}        
         self.mos_errstate = {}
         
         if download:
-            for pegel in self.stations:
-            
+            for pegel in self.stations:            
                 # MOS
                 cmd = 'ssh bm11mos@linwvd10 ls /data_MOS/bm11mos/1704/output/*' +\
                        pegel+'* | tail -1'
@@ -209,8 +209,8 @@ class combine_curves():
                 
                 self.mos_filename = filename
                 self.pegel_name = pegel
-                self.load_mos()  
-                   
+                self.load_mos()              
+                self.old_mos[pegel] = self.mos_data[pegel].copy()                
         else:
             x = df.mos(zeitpunkt = zeitpunkt, freq=15)
             x.main()
@@ -218,9 +218,10 @@ class combine_curves():
                            "/scenarios/mos_data.h5")          
             data = pd.read_hdf(source_file,'table')
             for pegel in self.stations:
-                self.mos_data[pegel] = data[pegel]    
+                self.mos_data[pegel] = data[pegel]  
+                self.old_mos[pegel] = self.mos_data[pegel].copy()  
             self.mos_errstate = x.mos_errstate
-
+               
     def read_NWHW(self):
         self.NWHW = {}
         #x = np.loadtxt(self.filename, dtype=str)       
@@ -406,6 +407,9 @@ class combine_curves():
                 except:
                     print(key + ': No observation data')
                     self.obs_errstate[key] = 1
+                if np.isnan(self.po[key].data.to_numpy()).all():
+                    print(key + ': No observation data')
+                    self.obs_errstate[key] = 1   
         else:            
             p = df.pegelonline(zeitpunkt, freq=1)
             p.store_data_part()
@@ -420,11 +424,15 @@ class combine_curves():
                     po_o.data = pd.DataFrame(inp[key].to_numpy(),
                                              index=inp[key].index,
                                              columns = ['waterlevel'])
-                    self.po[key] = po_o
+                    self.po[key] = po_o                    
                     self.obs_errstate[key] = 0
                 except:
                     print(key + ': No observation data')
                     self.obs_errstate[key] = 1
+                    
+                if np.isnan(self.po[key].data.to_numpy()).all():
+                    print(key + ': No observation data')
+                    self.obs_errstate[key] = 1              
                      
     def prepare_data(self):
         # Dont get lost of data origin
@@ -436,17 +444,23 @@ class combine_curves():
             # Resample frequency to 1 Minute
             # Interpolate linearly in time dimension
             self.mos_data[key] = self.mos_data[key].resample('60S').asfreq()   
-            self.mos_data[key] = self.mos_data[key].interpolate(method='linear')  
+            self.mos_data[key] = self.mos_data[key].interpolate(method='linear')
             
+            # Eingangsdaten glätten
+            self.mos_data[key] = self.mos_data[key].dropna()
+            self.mos_data[key]['waterlevel'] = savgol_filter(
+                            self.mos_data[key]['waterlevel'].to_numpy(),131,2)  
             # Add Observation and create one time series
             # Create complete index from start of observation to end of
             # mos / ast forecast
             if self.obs_errstate[key] < 1:
                 c_df = pd.concat([self.po[key].data,
-                              self.mos_data[key][~self.mos_data[key].index.isin(self.po[key].data.index)]])             
+                              self.mos_data[key][
+                                      ~self.mos_data[key].index.isin(
+                                              self.po[key].data.index)]])             
             else:
                 c_df = self.mos_data[key]
-            self.old_mos = self.mos_data[key].copy()  
+            
             # Verschiebung der MOS-Kurve beim Übergang von Beobachtung zu
             # Vorhersage
             first_delta = 0
@@ -458,7 +472,7 @@ class combine_curves():
                 while np.isnan(x):
                     try:
                         x = self.mos_data[key]['waterlevel'].loc[
-                            self.po[key].data.index[-1]
+                            self.po[key].data.last_valid_index()
                             + dt.timedelta(minutes=i)]
                     except:
                         i+=1
@@ -476,42 +490,33 @@ class combine_curves():
                 
                 # Wenn Verschiebung sehr groß, dann die NANs auffüllen 
                 # (linear interpoliert), und erst dann Kurven verbinden:
-                if abs(first_delta) > .5 and i < 60:
+                if i < 60:
                     # Extrapolate
                     odt = (self.po[key].data.at[
                             self.po[key].data.index[-1],
                             'waterlevel']-
                           self.po[key].data.at[
                                   self.po[key].data.index[-2],
-                                  'waterlevel'])
-          
-                    for m in range(i+1):
-                        c_df.loc[self.po[key].data.index[-1] 
-                        + dt.timedelta(minutes=i-1)] \
-                        = (c_df.loc[self.po[key].data.index[-1]] + m*odt)
-                                
+                                  'waterlevel']) 
+
+                    ts_1 = self.po[key].data.index[-1] 
+                    last_val = self.po[key].data['waterlevel'].iloc[-1]
+                    for m in range(1,i):
+                        if i < i:
+                            c_df.loc[ts_1 + dt.timedelta(minutes=m)] \
+                            = (last_val+ m*odt)
+                        
+                        self.po[key].data.loc[ts_1
+                        + dt.timedelta(minutes=m)] \
+                        = (last_val + m*odt)
+           
             # Kurven zusammenführen und Nans auffüllen
             mos = pd.DataFrame(c_df, index = c_df.index.copy())
             mos = mos.interpolate(method='linear') 
             self.mos_data[key] = pd.DataFrame(c_df, 
                                               index = c_df.index.copy(),
                                               columns = c_df.columns.copy())
-            
-            # Wenn Verschiebung sehr groß, dann nach Interpolationsvorgang
-            # die Daten wieder "zurückschieben", da im späteren Schritt
-            # die eigentliche Verschiebung stattfindet
-            if abs(first_delta) > .5 and i < 60:                
-                self.mos_data[key]['waterlevel'].loc[
-                        (self.po[key].data.index[-1] +
-                         dt.timedelta(minutes=1)):
-                        (self.po[key].data.index[-1] +
-                         dt.timedelta(minutes=i-1))] += first_delta - m*odt 
-                mos['waterlevel'].loc[
-                        (self.po[key].data.index[-1] +
-                         dt.timedelta(minutes=1)):
-                        (self.po[key].data.index[-1] +
-                         dt.timedelta(minutes=i-1))] += first_delta - m*odt
-                
+                   
             # Merge MHW, MNW to Manual forecast dataframe
             for i in ['Von','Bis', 'avg']:
                 for j in ['NW','HW']:
@@ -575,18 +580,18 @@ class combine_curves():
             # letztem manuellen Ereignis
             # Observation has highest accuracy apart from manual forecast
             if self.obs_errstate[key] < 1:
-                o_idx = len(self.po[key].data.index)-1
-                #mos.iloc[:o_idx,mos.columns.get_loc('DY')] = 0.0001
+                o_idx = self.po[key].data.index[-1]
             else:
-                #mos.iloc[:60,mos.columns.get_loc('DY')] = 0.0001
-                o_idx = 0    
+                o_idx = mos.index[0]  
                 
             if self.obs_errstate[key] < 1:
-                delta = pd.DataFrame(mos.iloc[o_idx+1,mos.columns.get_loc('waterlevel')]
-                                   -self.po[key].data['waterlevel'][-1],index=[mos.index[o_idx+1]],
-                                   columns = ['waterlevel'])
+                delta = pd.DataFrame(
+                            mos.loc[o_idx]['waterlevel']-      
+                            self.po[key].data.loc[o_idx]['waterlevel'],
+                            index=[o_idx],
+                            columns = ['waterlevel'])
             else: 
-                delta = pd.DataFrame(0,index=[mos.index[o_idx+1]],
+                delta = pd.DataFrame(0,index=[o_idx],
                                      columns = ['waterlevel'])
                 
             for lm,l in enumerate(mf['IDX']):
@@ -638,7 +643,7 @@ class combine_curves():
             plt.plot(self.po[key].data.index,self.po[key].data['waterlevel'],
                  color='r',ms = 3,lw=lw, label='OBS',zorder=100)
         
-        plt.plot(self.old_mos.index, self.old_mos,
+        plt.plot(self.old_mos[key].index, self.old_mos[key],
                  color='navy',lw=lw-1.5, label='MOS',zorder=11)
         
         plt.plot(mos.index, smooth,
@@ -668,7 +673,7 @@ class combine_curves():
         
         ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .25),
                      self.NWHW[key].index[-1] + dt.timedelta(days = .25)])
-        
+     
         # Format Time axis -> Hours on top, Days at bottom of plot          
         ax.xaxis.set_major_locator(DayLocator())   
         ax.xaxis.set_major_formatter(DateFormatter('%a %d.%m.%y'))                        
@@ -715,8 +720,8 @@ class combine_curves():
 
 if __name__ == '__main__':
     d = True
-    #zeitpunkt = dt.datetime(2017,10,29,7,00)
-    zeitpunkt = dt.datetime(2020,3,1,9,00)
+    zeitpunkt = dt.datetime(2017,10,29,7,00)
+    #zeitpunkt = dt.datetime(2020,3,1,9,00)
     stime1 = time.time()
     x = combine_curves()
     
