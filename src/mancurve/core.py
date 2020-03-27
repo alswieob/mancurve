@@ -436,7 +436,7 @@ class combine_curves():
                      
     def prepare_data(self):
         # Dont get lost of data origin
-        self.tracedata = {}
+        self.inp_mos = {}
         # Resample data:
         #  neuer Index: 
         for key in self.mos_data:           
@@ -449,7 +449,9 @@ class combine_curves():
             # Eingangsdaten glätten
             self.mos_data[key] = self.mos_data[key].dropna()
             self.mos_data[key]['waterlevel'] = savgol_filter(
-                            self.mos_data[key]['waterlevel'].to_numpy(),131,2)  
+                            self.mos_data[key]['waterlevel'].to_numpy(),141,2)  
+            
+            self.inp_mos[key] = self.mos_data[key]
             # Add Observation and create one time series
             # Create complete index from start of observation to end of
             # mos / ast forecast
@@ -463,7 +465,6 @@ class combine_curves():
             
             # Verschiebung der MOS-Kurve beim Übergang von Beobachtung zu
             # Vorhersage
-            first_delta = 0
             if self.obs_errstate[key] < 1:
                 i = 0
                 x = np.nan
@@ -478,17 +479,7 @@ class combine_curves():
                         i+=1
                         continue
                     i+=1
-                    
-                # Erste Verschiebung berechnen
-                first_delta = (x
-                                - self.po[key].data.at[
-                                        self.po[key].data.index[-1],
-                                        'waterlevel'])
-                            
-                if np.isnan(first_delta) or i > 30:
-                    first_delta = 0
-                
-                # Wenn Verschiebung sehr groß, dann die NANs auffüllen 
+                # NANs auffüllen 
                 # (linear interpoliert), und erst dann Kurven verbinden:
                 if i < 60:
                     # Extrapolate
@@ -501,22 +492,24 @@ class combine_curves():
 
                     ts_1 = self.po[key].data.index[-1] 
                     last_val = self.po[key].data['waterlevel'].iloc[-1]
-                    for m in range(1,i):
-                        if i < i:
+                    
+                    for m in range(1,i+1):
+                        if m < (i):
                             c_df.loc[ts_1 + dt.timedelta(minutes=m)] \
                             = (last_val+ m*odt)
                         
                         self.po[key].data.loc[ts_1
                         + dt.timedelta(minutes=m)] \
                         = (last_val + m*odt)
-           
+         
             # Kurven zusammenführen und Nans auffüllen
             mos = pd.DataFrame(c_df, index = c_df.index.copy())
-            mos = mos.interpolate(method='linear') 
+            mos = mos.resample('60S').asfreq()
+            #mos = mos.interpolate(method='linear') 
             self.mos_data[key] = pd.DataFrame(c_df, 
                                               index = c_df.index.copy(),
                                               columns = c_df.columns.copy())
-                   
+                
             # Merge MHW, MNW to Manual forecast dataframe
             for i in ['Von','Bis', 'avg']:
                 for j in ['NW','HW']:
@@ -576,20 +569,22 @@ class combine_curves():
                 
             # Calculate difference between curves at manual forecast 
             # times and difference between obsveration and first value of mos
-            # New Dataframe von Beobachtung bis 8h hinter 
-            # letztem manuellen Ereignis
-            # Observation has highest accuracy apart from manual forecast
             if self.obs_errstate[key] < 1:
                 o_idx = self.po[key].data.index[-1]
             else:
                 o_idx = mos.index[0]  
-                
-            if self.obs_errstate[key] < 1:
-                delta = pd.DataFrame(
-                            mos.loc[o_idx]['waterlevel']-      
-                            self.po[key].data.loc[o_idx]['waterlevel'],
+            
+            if self.obs_errstate[key] < 1:    
+                try:                   
+                    delta = pd.DataFrame(
+                            self.inp_mos[key].at[
+                            o_idx,'waterlevel']-      
+                            self.po[key].data.at[o_idx,'waterlevel'],
                             index=[o_idx],
                             columns = ['waterlevel'])
+                except:
+                    delta = pd.DataFrame(0,index=[o_idx],
+                                     columns = ['waterlevel'])
             else: 
                 delta = pd.DataFrame(0,index=[o_idx],
                                      columns = ['waterlevel'])
@@ -598,23 +593,26 @@ class combine_curves():
                 delta = delta.append(pd.DataFrame(mos.iloc[l,mos.columns.get_loc('waterlevel')]
                               -mf.iloc[lm,mf.columns.get_loc('avg')],index=[mos.index[l]],
                               columns = ['waterlevel']))
-      
+          
             # 8 hours after last HW/NW no delta
             delta = delta.append(pd.DataFrame(0,
                                  index=[mos.index[l]+dt.timedelta(hours=8)],
-                                 columns = ['waterlevel']))                
-            delta = delta.dropna()                
+                                 columns = ['waterlevel']))       
+            delta = delta.fillna(0)
                 
             # Interpolate differences linearly
             delta = delta.resample('60S').asfreq()   
-            delta = delta.interpolate(method='linear')                             
-            # Substract difference from mos
-            #self.old_mos = mos.copy()         
+            delta = delta.interpolate(method='linear')
+            #print(delta)
+            delta = pd.DataFrame(delta, index = mos.index,
+                                 columns = ['waterlevel'])
+            delta = delta.fillna(0)
             
+            # Substract difference from mos            
             mos['waterlevel'] = mos['waterlevel'].sub(
-                                delta['waterlevel'], fill_value = 0)       
-            mos = mos.resample('60S').asfreq()   
-            mos = mos.interpolate(method='linear')                         
+                                delta['waterlevel'])       
+            
+            mos = mos.resample('60S').asfreq()
             self.complete_mos = mos.copy()
             
             # Start GPR
@@ -623,9 +621,10 @@ class combine_curves():
         
     def GPR_MANU(self, key, mf, mos):
         # Glättung
-        smooth = savgol_filter(self.complete_mos['waterlevel'].to_numpy(),
-                               135,2)  
-        #smooth = self.complete_mos['waterlevel'].to_numpy()
+        #smooth = savgol_filter(self.complete_mos['waterlevel'].to_numpy(),
+        #                       135,2)  
+        smooth = self.complete_mos['waterlevel'].to_numpy()       
+
         # Plot results
         pd.plotting.register_matplotlib_converters()
         
@@ -633,11 +632,6 @@ class combine_curves():
         lw = 3
         colors = {'NWHW': "#1f77b4",'lin':'#2ca02c','Pchip':'#9467bd',
                   'mos':'navy'}
-        for idx,k in enumerate(self.tracedata):
-            plt.scatter(mos.index[np.array(self.tracedata[k][0],
-                                                         dtype=int)],
-                        self.tracedata[k][1],
-                        label=k, s = 6, color = colors[k], zorder = 100-idx)
                 
         if self.obs_errstate[key] < 1:
             plt.plot(self.po[key].data.index,self.po[key].data['waterlevel'],
@@ -673,7 +667,17 @@ class combine_curves():
         
         ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .25),
                      self.NWHW[key].index[-1] + dt.timedelta(days = .25)])
-     
+        
+        '''
+        ax.set_xlim([self.po[key].data.index[-1] - dt.timedelta(days = .025),
+                     self.po[key].data.index[-1] + dt.timedelta(days = .025)]) 
+        ax.set_ylim([np.min(self.complete_mos['waterlevel'].loc[
+                     self.po[key].data.index[-1] - dt.timedelta(days = .025):
+                     self.po[key].data.index[-1] + dt.timedelta(days = .025)])-.25,
+                     np.max(self.complete_mos['waterlevel'].loc[
+                     self.po[key].data.index[-1] - dt.timedelta(days = .025):
+                     self.po[key].data.index[-1] + dt.timedelta(days = .025)])+.25])
+        '''
         # Format Time axis -> Hours on top, Days at bottom of plot          
         ax.xaxis.set_major_locator(DayLocator())   
         ax.xaxis.set_major_formatter(DateFormatter('%a %d.%m.%y'))                        
@@ -719,7 +723,7 @@ class combine_curves():
         plt.close('all')
 
 if __name__ == '__main__':
-    d = True
+    d = False
     zeitpunkt = dt.datetime(2017,10,29,7,00)
     #zeitpunkt = dt.datetime(2020,3,1,9,00)
     stime1 = time.time()
