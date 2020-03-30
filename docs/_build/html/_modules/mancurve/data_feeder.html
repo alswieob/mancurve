@@ -1,0 +1,616 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mancurve.data_feeder &mdash; mancurve 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../../',
+              VERSION:'1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> mancurve
+          
+
+          
+            
+            <img src="../../_static/logo.gif" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">mancurve</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>mancurve.data_feeder</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mancurve.data_feeder</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Create test-scenario for specific date:</span>
+<span class="sd"># Gets observation data until specific time</span>
+<span class="sd"># Loads MOS-Forecast for fitting time</span>
+<span class="sd">-&gt; Store scenario data in directory to be loaded by manu_curve_os_independent</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">__author__</span> <span class="o">=</span> <span class="s1">&#39;Luis Becker&#39;</span>
+<span class="n">__version__</span> <span class="o">=</span> <span class="s1">&#39;02/2020&#39;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">shutil</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">glob</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">compress</span>
+
+<div class="viewcode-block" id="pegelonline"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.pegelonline">[docs]</a><span class="k">class</span> <span class="nc">pegelonline</span><span class="p">():</span>
+<div class="viewcode-block" id="pegelonline.__init__"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.pegelonline.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">endzeitpunkt</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Teil einer Zeitreihe aus Beobachtung schneiden. 24 Stunden</span>
+<span class="sd">        bis zum Endzeitpunkt.</span>
+<span class="sd">        </span>
+<span class="sd">        :param endzeitpunkt: Letzter Zeitpunkt in Zeitreihe</span>
+<span class="sd">        :param freq: Frequenz [min]</span>
+<span class="sd">        :type endzeitpunkt: datetime Object</span>
+<span class="sd">        :type freq: Integer     </span>
+<span class="sd">        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">end</span>  <span class="o">=</span> <span class="n">endzeitpunkt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;min&#39;</span>
+        <span class="c1"># Um zwei komplette Tage einzulesen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">timearray</span> <span class="o">=</span>  <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y_%m_</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">),</span>
+                           <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y_%m_</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)]</span> 
+        
+        <span class="c1"># Metadaten [pegel_ID, (LAT, LON), PNP]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;/home/bm1483/Pakete/&quot;</span>
+                                <span class="s2">&quot;validation_pkg/imonav_validation/&quot;</span>
+                                <span class="s2">&quot;/stationen/stationen.npy&quot;</span><span class="p">,</span>
+                                <span class="n">allow_pickle</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>               
+        <span class="bp">self</span><span class="o">.</span><span class="n">PNP</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">}</span>  </div>
+
+    
+<div class="viewcode-block" id="pegelonline.store_data_part"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.pegelonline.store_data_part">[docs]</a>    <span class="k">def</span> <span class="nf">store_data_part</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        Erzeugt ein HDF5 file, dass die Beobachtungsdaten für den</span>
+<span class="sd">        Zeitpunkt -48h enthält. Dafür werden die 24h-Dateien</span>
+<span class="sd">        eingelesen und ein neuer Array erzeugt.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">datum</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">timearray</span><span class="p">):</span>             
+            <span class="n">path</span> <span class="o">=</span>  <span class="s1">&#39;/work/bm1483/pegelonline/&#39;</span><span class="o">+</span><span class="n">datum</span><span class="o">+</span><span class="s1">&#39;/&#39;</span>        
+            <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">pegelonline</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_po_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">datum</span><span class="p">)</span> <span class="c1">#+ self.PNP   </span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_po_data</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="n">datum</span><span class="p">)</span> <span class="c1">#+ self.PNP   </span>
+                <span class="n">pegelonline</span> <span class="o">=</span> <span class="n">pegelonline</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># New Index</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">new_idx</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">pegelonline</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                     <span class="n">end</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        
+        <span class="c1"># Convert numpy array to dataframe</span>
+        <span class="n">po_t</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pegelonline</span><span class="p">,</span>
+                            <span class="n">columns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pegel</span><span class="p">,</span>
+                            <span class="n">index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">new_idx</span><span class="p">)</span>
+        
+        <span class="n">pname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;../../data/scenarios/&quot;</span><span class="p">),</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">po_t</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">pname</span><span class="o">+</span><span class="s2">&quot;pon_data.h5&quot;</span><span class="p">,</span> <span class="s1">&#39;table&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="pegelonline.load_po_data"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.pegelonline.load_po_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_po_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">path</span><span class="p">,</span><span class="n">datum</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; Loads pegelonline HDF5 file.</span>
+<span class="sd">        </span>
+<span class="sd">        :param path: Pfad zur Datei</span>
+<span class="sd">        :param datum: Datum </span>
+<span class="sd">        :type path: string</span>
+<span class="sd">        :type datum: string [%Y_%m_%d]</span>
+<span class="sd">        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">timestamp</span> <span class="o">=</span> <span class="n">datum</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span> 
+        <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_hdf</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0}{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="s1">&#39;/Pegelonline_&#39;</span><span class="o">+</span>
+                           <span class="n">timestamp</span><span class="o">+</span><span class="s1">&#39;.h5&#39;</span><span class="p">),</span><span class="s1">&#39;OBS&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pegel</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">columns</span>
+        <span class="k">return</span> <span class="n">data</span></div></div>
+    
+<div class="viewcode-block" id="mos"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos">[docs]</a><span class="k">class</span> <span class="nc">mos</span><span class="p">():</span>
+<div class="viewcode-block" id="mos.__init__"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zeitpunkt</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>     
+        <span class="sd">&#39;&#39;&#39;MOS Daten bereitstellen und aus Archiv holen.</span>
+<span class="sd">        </span>
+<span class="sd">        :param zeitpunkt: Zu betrachtender Zeitpunkt (gleich Endzeitpunkt PO)</span>
+<span class="sd">        :param freq: Frequenz [min]</span>
+<span class="sd">        :type endzeitpunkt: datetime Object</span>
+<span class="sd">        :type freq: Integer     </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">zeitpunkt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;min&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span>     <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_errstate</span> <span class="o">=</span> <span class="p">{}</span>
+        
+        <span class="c1"># Um zwei komplette Tage einzulesen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datum</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%Y_%m_</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>        
+        <span class="bp">self</span><span class="o">.</span><span class="n">init</span>  <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H&#39;</span><span class="p">)</span> 
+                      <span class="o">+</span> <span class="nb">str</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">minute</span> <span class="o">//</span> <span class="mi">15</span><span class="p">)</span><span class="o">*</span><span class="mi">15</span><span class="p">)</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+        
+        
+        <span class="c1"># Metadaten [pegel_ID, (LAT, LON), PNP]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;/home/bm1483/Pakete/&quot;</span>
+                                <span class="s2">&quot;validation_pkg/imonav_validation/&quot;</span>
+                                <span class="s2">&quot;/stationen/stationen.npy&quot;</span><span class="p">,</span>
+                                <span class="n">allow_pickle</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>               
+        <span class="bp">self</span><span class="o">.</span><span class="n">PNP</span> <span class="o">=</span> <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">}</span></div>
+      
+<div class="viewcode-block" id="mos.prepare_mosdata"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.prepare_mosdata">[docs]</a>    <span class="k">def</span> <span class="nf">prepare_mosdata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39; MOS Daten aus Archiv vorbereiten. Entpacken und die nächste</span>
+<span class="sd">        Datei vom Zeitpunkt aus gesehen auswählen.        </span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">mos_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;/work/bm1483/mos_archiv/&#39;</span><span class="p">,</span>
+                                      <span class="bp">self</span><span class="o">.</span><span class="n">datum</span><span class="p">,</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        
+        <span class="n">came_from</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">mos_path</span><span class="p">)</span>
+        
+        <span class="n">tar_archives</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">mos_path</span><span class="p">)</span>
+        <span class="n">tar_archives</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">tar_archives</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;tar.gz&quot;</span><span class="p">)]</span>
+        <span class="c1"># Entpacke Archives</span>
+        <span class="k">for</span> <span class="n">archive</span> <span class="ow">in</span> <span class="n">tar_archives</span><span class="p">:</span>
+            <span class="n">file_name</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mos_path</span> <span class="p">,</span> <span class="n">archive</span><span class="p">)</span>
+            <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s1">&#39;tar&#39;</span><span class="p">,</span> <span class="s1">&#39;xfz&#39;</span><span class="p">,</span> <span class="n">file_name</span><span class="p">])</span>
+            <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+            
+        <span class="c1"># Alle Dateien zu ganzer Stunde auslesen</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">mos_path</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.dat&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="s2">&quot;00_&quot;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">]</span>
+        <span class="n">init_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">13</span><span class="p">:</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span><span class="p">]</span>
+        <span class="n">init_times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">init_times</span><span class="p">)</span>
+        
+        <span class="c1"># Zeiten aussortieren, für die nicht alle Pegel vorhanden sind</span>
+        <span class="n">valid_times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">tim</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">init_times</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">([</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="s2">&quot;</span><span class="si">{0}{1}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tim</span><span class="p">,</span><span class="s1">&#39;_&#39;</span><span class="p">)</span> <span class="ow">in</span> <span class="n">x</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">30</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">valid_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tim</span><span class="p">)</span>
+     
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">came_from</span><span class="p">)</span>
+        
+        <span class="c1"># Init auswählen, das am nächsten am Zeitpunkt liegt</span>
+        <span class="n">x</span><span class="p">,</span><span class="n">i</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span><span class="mi">0</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span> <span class="ow">in</span> <span class="n">valid_times</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valid_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="n">x</span> <span class="o">==</span> <span class="kc">False</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">init</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span> <span class="ow">in</span> <span class="n">valid_times</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">valid_init</span> <span class="o">=</span> <span class="n">valid_times</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">i</span><span class="o">+=</span><span class="mi">1</span>                   
+        
+        <span class="c1"># Gültige Files</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_files</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">mos_path</span><span class="o">+</span><span class="s1">&#39;*&#39;</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_init</span><span class="o">+</span><span class="s1">&#39;_*&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="mos.mos_get_h5_part"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.mos_get_h5_part">[docs]</a>    <span class="k">def</span> <span class="nf">mos_get_h5_part</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>     
+        <span class="sd">&#39;&#39;&#39; File öffnen und Daten Laden, resamplen, evlt. interpolieren [1min].</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">open_file</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mos_files</span><span class="p">:</span>     
+            <span class="c1"># Read in Mos-Data</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span> <span class="o">=</span> <span class="n">open_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="mi">8</span><span class="p">]</span>           
+            <span class="bp">self</span><span class="o">.</span><span class="n">get_mos_dictionary</span><span class="p">(</span><span class="n">open_file</span><span class="p">)</span>  
+            
+                
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1">#self.mos_data.columns = self.mos_data.columns.droplevel(1)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="s1">&#39;60S&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">asfreq</span><span class="p">()</span>   
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;linear&#39;</span><span class="p">)</span>       
+           
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">asfreq</span><span class="p">()</span>   
+        <span class="n">pname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;../../data/scenarios/&quot;</span><span class="p">),</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="o">.</span><span class="n">to_hdf</span><span class="p">(</span><span class="n">pname</span><span class="o">+</span><span class="s2">&quot;mos_data.h5&quot;</span><span class="p">,</span> <span class="s1">&#39;table&#39;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="mos.get_mos_dictionary"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.get_mos_dictionary">[docs]</a>    <span class="k">def</span> <span class="nf">get_mos_dictionary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">filename</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Liest mos.txt File ein und gibt ein Dictionary mit Daten raus</span>
+<span class="sd">        </span>
+<span class="sd">        Args:</span>
+<span class="sd">            file:       Filename eines Mos files</span>
+<span class="sd">            </span>
+<span class="sd">        Returns:</span>
+<span class="sd">            results     Dictionary mit den MOS-Daten</span>
+<span class="sd">        &quot;&quot;&quot;</span>   
+        <span class="c1"># MOS and Astronomic Prediction</span>
+        <span class="n">fh</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+        <span class="n">init_time</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">datestamp</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">hours</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">minutes</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">pegel</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r0</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r1</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r2</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r3</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r4</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">r5</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">header1</span> <span class="o">=</span> <span class="n">fh</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> 
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fh</span><span class="p">:</span>
+            <span class="c1"># Speichern der einzelnen Variablen (Formspezifisch)</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="c1"># entfernen von \t und \n </span>
+            <span class="n">datestamp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">7</span><span class="p">:</span><span class="mi">15</span><span class="p">])</span>
+            <span class="n">init_time</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">15</span><span class="p">:</span><span class="mi">19</span><span class="p">])</span>
+            <span class="n">hours</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">23</span><span class="p">:</span><span class="mi">26</span><span class="p">]))</span>
+            <span class="n">minutes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">26</span><span class="p">:</span><span class="mi">28</span><span class="p">]))</span>
+            <span class="n">pegel</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">40</span><span class="p">:</span><span class="mi">43</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">r0</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">43</span><span class="p">:</span><span class="mi">48</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">r1</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">48</span><span class="p">:</span><span class="mi">53</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">r2</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">53</span><span class="p">:</span><span class="mi">58</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">r3</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">58</span><span class="p">:</span><span class="mi">63</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>
+            <span class="n">r4</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">63</span><span class="p">:</span><span class="mi">68</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>          
+            <span class="n">r5</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">68</span><span class="p">:</span><span class="mi">73</span><span class="p">])</span><span class="o">*</span><span class="mf">0.01</span><span class="p">)</span>          
+        <span class="n">fh</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>                      
+        <span class="k">for</span> <span class="n">keyword</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;pegel&#39;</span><span class="p">,</span><span class="s1">&#39;init_time&#39;</span><span class="p">,</span><span class="s1">&#39;hours&#39;</span><span class="p">,</span><span class="s1">&#39;minutes&#39;</span><span class="p">,</span><span class="s1">&#39;r0&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;r1&#39;</span><span class="p">,</span><span class="s1">&#39;r2&#39;</span><span class="p">,</span><span class="s1">&#39;r3&#39;</span><span class="p">,</span><span class="s1">&#39;r4&#39;</span><span class="p">,</span><span class="s1">&#39;r5&#39;</span><span class="p">,</span> <span class="s1">&#39;datestamp&#39;</span><span class="p">]:</span>
+            <span class="n">results</span><span class="p">[</span><span class="n">keyword</span><span class="p">]</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">keyword</span><span class="p">))</span>   
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_mos</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+                 
+<div class="viewcode-block" id="mos.plausa_mos"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.plausa_mos">[docs]</a>    <span class="k">def</span> <span class="nf">plausa_mos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mos_dict</span><span class="p">,</span> <span class="n">new_r</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Checks MOS on plausability. Treat Zollenspieker &amp; Geesthacht with</span>
+<span class="sd">        higher tresholds.</span>
+<span class="sd">        </span>
+<span class="sd">        :param mos_dict: Dictionary with MOS-Data</span>
+<span class="sd">        :param new_r: Valid &quot;Rückfall-Positionen&quot; (Ohne Fehlerwerte)</span>
+<span class="sd">        :type mos_dict: Dictionary</span>
+<span class="sd">        :type new_r: List</span>
+<span class="sd">        </span>
+<span class="sd">        :return: If MOS-Data is plausible</span>
+<span class="sd">        :rtype: Bool</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span> <span class="o">==</span> <span class="s1">&#39;pgl_732D&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span> <span class="o">==</span> <span class="s1">&#39;pgl_731P&#39;</span><span class="p">:</span>
+            <span class="n">thhold</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">thhold</span> <span class="o">=</span> <span class="mi">1</span>
+            
+        <span class="n">valid_r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">new_r</span><span class="p">),</span><span class="nb">len</span><span class="p">(</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]])))</span>
+        <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">new_r</span><span class="p">):</span>
+                <span class="n">valid_r</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">mos_dict</span><span class="p">[</span><span class="n">r</span><span class="p">]</span>            
+        <span class="c1"># Wenn das Mittel der ersten 10 Werte von zwei (gültigen)</span>
+        <span class="c1"># Rückfallpositionen um mehr als 1 Meter abweicht    </span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">and</span> \
+        <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">valid_r</span><span class="p">[</span><span class="mi">0</span><span class="p">,:</span><span class="mi">10</span><span class="p">])</span><span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">valid_r</span><span class="p">[</span><span class="mi">1</span><span class="p">,:</span><span class="mi">10</span><span class="p">]))</span> <span class="o">&gt;</span> <span class="n">thhold</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">True</span> 
+            
+        <span class="c1"># Wenn die verwendete Rückfallposition mehr als 80 Zentimeter </span>
+        <span class="c1"># vom Staumodell abweicht</span>
+        <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;r5&#39;</span> <span class="ow">in</span> <span class="n">new_r</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">new_r</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">and</span> \
+        <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">valid_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span><span class="n">valid_r</span><span class="p">[</span><span class="n">new_r</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="s1">&#39;r5&#39;</span><span class="p">)]))</span> <span class="o">&gt;</span> <span class="n">thhold</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>    
+        
+        <span class="n">stdds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]])))</span>
+        <span class="n">dr_dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]]):</span>   
+            <span class="n">stdds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">valid_r</span><span class="p">[:,</span><span class="n">i</span><span class="p">])</span>               
+            <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> 
+                <span class="n">dr_dt</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>    <span class="o">=</span> <span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">mos_dict</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]][</span><span class="n">i</span><span class="p">]</span>  
+                
+        <span class="c1"># Wenn die Standardabweichung zw. den Rückfallpositionen &gt; 1m ist </span>
+        <span class="c1"># oder die Änderung im Stau &gt;80cm/15min        </span>
+        <span class="k">if</span>  <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">stdds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">thhold</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmax</span><span class="p">(</span><span class="n">dr_dt</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.8</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>       
+        <span class="k">return</span> <span class="kc">False</span>   </div>
+    
+<div class="viewcode-block" id="mos.check_mos"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.check_mos">[docs]</a>    <span class="k">def</span> <span class="nf">check_mos</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">mos_file_data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Checks MOS Input (calling plausability method) and creates</span>
+<span class="sd">        array of datetime-strings which is attached as attribute to </span>
+<span class="sd">        the class instance.</span>
+<span class="sd">        </span>
+<span class="sd">        :param mos_file_data: Dictionary of MOS-Data </span>
+<span class="sd">        :type mos_file_data: Dictionary   </span>
+<span class="sd">        </span>
+<span class="sd">        :return: If Mos data is plausible</span>
+<span class="sd">        :rtype: Bool</span>
+<span class="sd">           </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">all_r</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;r0&#39;</span><span class="p">,</span><span class="s1">&#39;r1&#39;</span><span class="p">,</span><span class="s1">&#39;r2&#39;</span><span class="p">,</span><span class="s1">&#39;r3&#39;</span><span class="p">,</span><span class="s1">&#39;r4&#39;</span><span class="p">,</span><span class="s1">&#39;r5&#39;</span><span class="p">]</span>
+        <span class="n">boolean_arr</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rueckfall</span> <span class="ow">in</span> <span class="n">all_r</span><span class="p">:</span>
+            <span class="c1"># Falls Fehlerwert in Zeitreihe, anderer Rückfall</span>
+            <span class="n">boolean_arr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">mos_file_data</span><span class="p">[</span><span class="n">rueckfall</span><span class="p">])</span> <span class="o">&lt;</span> <span class="nb">abs</span><span class="p">(</span><span class="mi">50</span><span class="p">)))</span>    
+        <span class="n">new_r</span>  <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">compress</span><span class="p">(</span><span class="n">all_r</span><span class="p">,</span><span class="n">boolean_arr</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">new_r</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">plausa_mos</span><span class="p">(</span><span class="n">mos_file_data</span><span class="p">,</span> <span class="n">new_r</span><span class="p">):</span>    <span class="c1"># True for astronomic simulation</span>
+            <span class="c1"># Astronomische Vorhersage</span>
+            <span class="n">mos_WL</span>   <span class="o">=</span> <span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;pegel&#39;</span><span class="p">]</span> <span class="c1">#+ self.PNP    </span>
+            <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span> <span class="o">+</span> <span class="s1">&#39;: -&gt; Nur Astronomie&#39;</span><span class="p">)</span>                                                                  
+            <span class="bp">self</span><span class="o">.</span><span class="n">mos_errstate</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>                
+            <span class="n">mos_WL</span>  <span class="o">=</span> <span class="p">(</span><span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;pegel&#39;</span><span class="p">]</span>  <span class="o">+</span>
+                       <span class="n">mos_file_data</span><span class="p">[</span><span class="n">new_r</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="p">)</span><span class="c1">#+</span>
+                       <span class="c1">#self.PNP[self.pegel_name])                   </span>
+           
+               
+            <span class="bp">self</span><span class="o">.</span><span class="n">mos_errstate</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+            
+        <span class="c1"># MOS / Astronomischer Zeit Array               </span>
+        <span class="n">time_array</span> <span class="o">=</span>  <span class="p">[(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;datestamp&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">]</span><span class="o">+</span>
+                        <span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;init_time&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">],</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">%H%M&#39;</span><span class="p">)</span> <span class="o">+</span> 
+                        <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;minutes&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">])</span> <span class="o">+</span>
+                        <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;hours&#39;</span><span class="p">][</span><span class="n">x</span><span class="p">]))</span> 
+                        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">mos_file_data</span><span class="p">[</span><span class="s1">&#39;minutes&#39;</span><span class="p">]))]</span>     <span class="c1"># Potenziell langsam</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_data</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">pegel_name</span><span class="p">]</span> <span class="o">=</span>  <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">mos_WL</span><span class="p">,</span>
+                     <span class="n">index</span> <span class="o">=</span> <span class="n">time_array</span><span class="p">,</span>
+                     <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;waterlevel&#39;</span><span class="p">])</span>  </div>
+            
+<div class="viewcode-block" id="mos.pack_mosdata"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.pack_mosdata">[docs]</a>    <span class="k">def</span> <span class="nf">pack_mosdata</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;MOS Daten wieder zippen.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="c1"># Entpackte einzeldateien wieder löschen</span>
+        <span class="n">mos_path</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{0}{1}{2}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;/work/bm1483/mos_archiv/&#39;</span><span class="p">,</span>
+                   <span class="bp">self</span><span class="o">.</span><span class="n">datum</span><span class="p">,</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        
+        <span class="n">came_from</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">mos_path</span><span class="p">)</span>
+        
+        <span class="n">data</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">mos_path</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;.dat&quot;</span><span class="p">)]</span>
+        	
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>   
+        
+        <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">came_from</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="mos.main"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.mos.main">[docs]</a>    <span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;Hauptfunktion führt Teilschritte nacheinander aus.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prepare_mosdata</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mos_get_h5_part</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pack_mosdata</span><span class="p">()</span></div></div>
+
+<div class="viewcode-block" id="nwhw"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.nwhw">[docs]</a><span class="k">class</span> <span class="nc">nwhw</span><span class="p">():</span>
+<div class="viewcode-block" id="nwhw.__init__"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.nwhw.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">zeitpunkt</span><span class="p">):</span>    
+        <span class="sd">&#39;&#39;&#39;Nächstgelegene Manueller Vorhersage aus Archiv holen.</span>
+<span class="sd">        </span>
+<span class="sd">        :param zeitpunkt: Zeitpunkt zur Betrachtung</span>
+<span class="sd">        :type endzeitpunkt: datetime Object</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="n">zeitpunkt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">zeitpunkt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">FNULL</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span>
+        <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">()</span>
+        
+        <span class="k">if</span> <span class="n">vf</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">zeitpunkt</span> <span class="o">-</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">vf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_file</span><span class="p">()</span>
+            
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_file</span> <span class="o">=</span> <span class="n">vf</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_file</span><span class="p">()</span></div>
+                    
+<div class="viewcode-block" id="nwhw.get_file"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.nwhw.get_file">[docs]</a>    <span class="k">def</span> <span class="nf">get_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&#39;&#39;&#39;File aus Archiv laden (linwvd10). Vorerst nach Zeitpunkt auswählen.</span>
+<span class="sd">        &#39;&#39;&#39;</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;/store_linfile11/Vorhersagen/Staumatrix/HWNW_vorhersage&quot;</span>
+                <span class="s2">&quot;/&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="o">.</span><span class="n">year</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+        <span class="c1"># NWHW</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;ssh bm11mos@linwvd10 ls &#39;</span><span class="o">+</span> <span class="n">path</span> <span class="o">+</span> <span class="s1">&#39;*&#39;</span>
+               <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;_%Y%m</span><span class="si">%d</span><span class="s1">&#39;</span><span class="p">)</span>  <span class="o">+</span> <span class="s1">&#39;*&#39;</span><span class="p">)</span> 
+
+        <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span><span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">stdout</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+                             <span class="p">,</span><span class="n">stderr</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+        <span class="n">filename</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">stderr</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+     
+        <span class="n">old_dt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inf</span>
+        <span class="n">valid_file</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+            <span class="n">delta</span> <span class="o">=</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">-</span> 
+                 <span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="mi">12</span><span class="p">:],</span><span class="s1">&#39;%Y%m</span><span class="si">%d</span><span class="s1">%H%M&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
+            
+            <span class="k">if</span> <span class="n">delta</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">delta</span> <span class="o">&lt;</span> <span class="n">old_dt</span><span class="p">:</span>
+                <span class="n">valid_file</span> <span class="o">=</span> <span class="n">x</span>
+                <span class="n">old_dt</span> <span class="o">=</span> <span class="n">delta</span>
+        
+        <span class="k">return</span> <span class="n">valid_file</span></div>
+            
+<div class="viewcode-block" id="nwhw.load_file"><a class="viewcode-back" href="../../index.html#mancurve.data_feeder.nwhw.load_file">[docs]</a>    <span class="k">def</span> <span class="nf">load_file</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>    
+        <span class="sd">&#39;&#39;&#39; Dateien in temporären Ordner verschieben und dne Filenamen ausgeben</span>
+<span class="sd">        &#39;&#39;&#39;</span>           
+        <span class="n">pname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="s2">&quot;../../data/scenarios/&quot;</span><span class="p">),</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="s1">&#39;bm11mos@linwvd10:&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_file</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;scp&quot;</span><span class="p">,</span><span class="s2">&quot;-T&quot;</span><span class="p">,</span><span class="n">cmd</span><span class="p">,</span><span class="n">pname</span><span class="p">],</span>
+                             <span class="n">stdout</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">FNULL</span><span class="p">,</span>
+                             <span class="n">stderr</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+        <span class="n">shutil</span><span class="o">.</span><span class="n">copy2</span><span class="p">(</span><span class="n">pname</span> <span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                     <span class="n">pname</span> <span class="o">+</span>
+                     <span class="s2">&quot;HWNW_Vorhersage.txt&quot;</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">pname</span> <span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_file</span> <span class="o">=</span> <span class="p">(</span><span class="n">pname</span><span class="o">+</span><span class="s2">&quot;HWNW_Vorhersage.txt&quot;</span><span class="p">)</span></div></div>
+        
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">pegelonline</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">55</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">mos</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">16</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">nwhw</span><span class="p">(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">16</span><span class="p">))</span>
+    
+    <span class="n">x</span><span class="o">.</span><span class="n">store_data_part</span><span class="p">()</span>
+    <span class="n">y</span><span class="o">.</span><span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Luis Becker
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

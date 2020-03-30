@@ -1,0 +1,461 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>mancurve.pegelonline_getter &mdash; mancurve 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'../../',
+              VERSION:'1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="../../_static/jquery.js"></script>
+        <script type="text/javascript" src="../../_static/underscore.js"></script>
+        <script type="text/javascript" src="../../_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> mancurve
+          
+
+          
+            
+            <img src="../../_static/logo.gif" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">mancurve</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>mancurve.pegelonline_getter</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for mancurve.pegelonline_getter</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="k">import</span> <span class="n">savgol_filter</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<div class="viewcode-block" id="pegelonline_timeseries"><a class="viewcode-back" href="../../index.html#mancurve.pegelonline_getter.pegelonline_timeseries">[docs]</a><span class="k">class</span> <span class="nc">pegelonline_timeseries</span><span class="p">():</span>
+<div class="viewcode-block" id="pegelonline_timeseries.__init__"><a class="viewcode-back" href="../../index.html#mancurve.pegelonline_getter.pegelonline_timeseries.__init__">[docs]</a>    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span><span class="n">pegel_id</span><span class="p">,</span> <span class="n">storedir</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Starts Class-Object and directly loads newest data for one location.</span>
+<span class="sd">        </span>
+<span class="sd">        :param pegel_id: BSH-Pegelnummer</span>
+<span class="sd">        :param storedir: Speicherort</span>
+<span class="sd">        :type pegel_id: string</span>
+<span class="sd">        :type storedir: string</span>
+<span class="sd">        &quot;&quot;&quot;</span>   
+        <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="o">=</span> <span class="n">pegel_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span> <span class="o">=</span> <span class="n">storedir</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_newest_data</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span></div>
+                
+<div class="viewcode-block" id="pegelonline_timeseries.load_data"><a class="viewcode-back" href="../../index.html#mancurve.pegelonline_getter.pegelonline_timeseries.load_data">[docs]</a>    <span class="k">def</span> <span class="nf">load_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Loads Pegelonline data. Attaches</span>
+<span class="sd">            the data to attributes of class instance. </span>
+<span class="sd">            &quot;&quot;&quot;</span>                              
+            <span class="c1"># Pegelonline                        </span>
+            <span class="n">pon_wl</span><span class="p">,</span><span class="n">time_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_pegelonline</span><span class="p">()</span>           
+              
+            <span class="c1"># Interpolate missing data and smooth it</span>
+            <span class="c1"># Filter till first NAN by searching in reverse order</span>
+            <span class="c1"># for first non nan value and cut empty part at the end     </span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>                  
+                <span class="n">idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">)</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">argmin</span><span class="p">()</span>
+                <span class="n">time_array</span> <span class="o">=</span> <span class="n">time_array</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>  
+                <span class="n">pon_wl</span> <span class="o">=</span> <span class="n">pon_wl</span><span class="p">[:</span><span class="n">idx</span><span class="p">]</span>
+                
+                <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">pon_wl</span> <span class="o">=</span> <span class="n">savgol_filter</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">,</span><span class="mi">151</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>  
+                <span class="c1"># Wenn weniger als 5% der Daten fehlen, zuerst interpolieren</span>
+                <span class="k">elif</span> <span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">))</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span> 
+                    <span class="n">pon_wl</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">)</span>
+                    <span class="c1"># interpolate missing data</span>
+                    <span class="n">pon_wl</span> <span class="o">=</span> <span class="n">pon_wl</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span><span class="p">)</span>
+                    <span class="c1"># Smooth data</span>
+                    <span class="n">pon_wl</span> <span class="o">=</span> <span class="n">savgol_filter</span><span class="p">(</span><span class="n">pon_wl</span><span class="p">,</span><span class="mi">151</span><span class="p">,</span><span class="mi">4</span><span class="p">)</span>  
+                     
+            <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">pon_wl</span><span class="o">*</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="n">time_array</span><span class="p">,</span>
+                                             <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;waterlevel&#39;</span><span class="p">])</span>    </div>
+         
+<div class="viewcode-block" id="pegelonline_timeseries.read_pegelonline"><a class="viewcode-back" href="../../index.html#mancurve.pegelonline_getter.pegelonline_timeseries.read_pegelonline">[docs]</a>    <span class="k">def</span> <span class="nf">read_pegelonline</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Reads and checks Pegelonline.txt File.</span>
+<span class="sd">            &quot;&quot;&quot;</span>          
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pon_filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">inp</span><span class="p">:</span>
+                <span class="n">decoded_inp</span>   <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;ISO-8859-1&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">inp</span><span class="p">]</span>
+                <span class="n">filtered_inp</span>  <span class="o">=</span> <span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;#&#39;</span> <span class="ow">in</span> <span class="n">x</span><span class="p">,</span> <span class="n">decoded_inp</span><span class="p">)</span>
+    
+            <span class="bp">self</span><span class="o">.</span><span class="n">pon_first_date</span> <span class="o">=</span> <span class="n">decoded_inp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">pon_first_date</span><span class="p">:</span> <span class="c1"># Falls keine Gültige Pegelonlinedatei</span>
+                <span class="k">return</span> <span class="p">[],[]</span>                    
+    
+            <span class="n">fil</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">filtered_inp</span><span class="p">]</span>
+            <span class="n">tim_arr</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fil</span><span class="p">]</span>
+            <span class="n">pon_data</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\r</span><span class="s1">&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">fil</span><span class="p">]</span>
+    
+            <span class="n">pon_data</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">))</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> 
+                        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">pon_data</span><span class="p">]</span>
+    
+            <span class="c1"># Überprüfung, ob die Daten plausibel sind </span>
+            <span class="c1"># Änderunge pro Minute nicht mehr als 50cm</span>
+            <span class="n">check_pegel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">pon_data</span><span class="p">)</span>
+            
+            <span class="c1"># Nur bis zur ersten NAN behalten </span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">check_pegel</span><span class="p">)</span>
+            <span class="n">last_valid_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="o">~</span><span class="n">mask</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">check_pegel</span><span class="o">=</span><span class="n">check_pegel</span><span class="p">[:</span><span class="o">-</span><span class="n">last_valid_idx</span><span class="p">]</span>
+            <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="p">[:</span><span class="o">-</span><span class="n">last_valid_idx</span><span class="p">]</span>
+            <span class="n">tim_arr</span> <span class="o">=</span> <span class="n">tim_arr</span><span class="p">[:</span><span class="o">-</span><span class="n">last_valid_idx</span><span class="p">]</span>
+            
+            <span class="c1"># Fill in NaN&#39;s with error value...       </span>
+            <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="n">mask</span><span class="p">)</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+                <span class="n">check_pegel</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10000</span> <span class="c1">#np.interp(np.flatnonzero(mask),</span>
+                                   <span class="c1">#np.flatnonzero(~mask), check_pegel[~mask])            </span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+                <span class="n">diff</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="n">check_pegel</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">check_pegel</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+                <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+                        <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">)</span>   
+                        <span class="c1"># Sprünge ersetzen (+/-1 IDX)</span>
+                        <span class="n">where_to_replace</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">diff</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">)</span>
+                        <span class="n">where_to_replace2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">where_to_replace</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> 
+                        <span class="n">where_to_replace3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">where_to_replace</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span> 
+                        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">where_to_replace3</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>                            
+                            <span class="n">where_to_replace3</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">where_to_replace3</span><span class="p">,</span>
+                                                        <span class="mi">0</span><span class="p">,</span><span class="mi">100000</span><span class="p">)</span>
+                            <span class="n">check_pegel</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                            
+                        <span class="c1"># Hängengebliebnen pegel ersetzen</span>
+                        <span class="n">where_to_replace4</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">diff</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>                   
+                        <span class="n">check_pegel</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">where_to_replace</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                        <span class="n">check_pegel</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">where_to_replace2</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                        <span class="n">check_pegel</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">where_to_replace3</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+                        <span class="n">check_pegel</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="n">where_to_replace4</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+            
+            <span class="n">pon_data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">check_pegel</span><span class="p">)</span>       
+            <span class="n">tim_arr</span>    <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tim_arr</span><span class="p">)</span> 
+            <span class="c1"># Umrechnung in UTC</span>
+            <span class="n">dates_times</span> <span class="o">=</span> <span class="p">[(</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pon_first_date</span><span class="p">,</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y&#39;</span><span class="p">)</span> <span class="o">+</span> 
+                            <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">x</span><span class="p">))</span> <span class="o">+</span> <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+                            <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">len</span><span class="p">(</span><span class="n">tim_arr</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>    
+            
+            <span class="n">inp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            
+            <span class="k">return</span> <span class="n">pon_data</span><span class="p">,</span> <span class="n">dates_times</span></div>
+                    
+<div class="viewcode-block" id="pegelonline_timeseries.get_newest_data"><a class="viewcode-back" href="../../index.html#mancurve.pegelonline_getter.pegelonline_timeseries.get_newest_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_newest_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="sd">&quot;&quot;&quot; Download newest numerical oberservation </span>
+<span class="sd">            data (pegelonline). Data will be stored in the  &quot;self.a_dir&quot; directory.</span>
+<span class="sd">            </span>
+<span class="sd">            Pegelonline data is downloaded from www.pegelonline.wsv.de</span>
+<span class="sd">            &quot;&quot;&quot;</span>         
+       
+            <span class="c1"># Pegelonline</span>
+            <span class="n">date_array</span> <span class="o">=</span> <span class="p">[(</span><span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span> <span class="o">-</span> 
+                           <span class="n">dt</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">x</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">%d</span><span class="s1">.%m.%Y&#39;</span><span class="p">)</span>
+                           <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+            
+            <span class="c1"># Names on Pegelonline</span>
+            <span class="n">po_elbe</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;HAMBURG+ST.+PAULI&#39;</span><span class="p">,</span><span class="s1">&#39;BRUNSB%DCTTEL+MOLE+1&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;CUXHAVEN+STEUBENH%D6FT&#39;</span><span class="p">,</span><span class="s1">&#39;OSTERIFF+MPM&#39;</span><span class="p">,</span><span class="s1">&#39;BROKDORF&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;ST%D6R-SPERRWERK+AP&#39;</span><span class="p">,</span><span class="s1">&#39;GL%DCCKSTADT&#39;</span><span class="p">,</span><span class="s1">&#39;KRAUTSAND&#39;</span><span class="p">,</span><span class="s1">&#39;KOLLMAR&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;KR%DCCKAU-SPERRWERK+AP&#39;</span><span class="p">,</span><span class="s1">&#39;GRAUERORT&#39;</span><span class="p">,</span><span class="s1">&#39;PINNAU-SPERRWERK+AP&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;STADERSAND&#39;</span><span class="p">,</span><span class="s1">&#39;HETLINGEN&#39;</span><span class="p">,</span><span class="s1">&#39;L%DCHORT&#39;</span><span class="p">,</span><span class="s1">&#39;SCHULAU&#39;</span><span class="p">,</span><span class="s1">&#39;CRANZ&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;ZOLLENSPIEKER&#39;</span><span class="p">,</span><span class="s1">&#39;GEESTHACHT&#39;</span><span class="p">,</span><span class="s1">&#39;WEHR+GEESTHACHT+UP&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;OTTERNDORF+MPM&#39;</span><span class="p">,</span><span class="s1">&#39;BLANKENESE+UF&#39;</span><span class="p">,</span> <span class="s1">&#39;SEEMANNSH%D6FT&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;SCH%D6PFSTELLE&#39;</span><span class="p">,</span> <span class="s1">&#39;HAMBURG-HARBURG&#39;</span><span class="p">,</span> <span class="s1">&#39;BUNTHAUS&#39;</span><span class="p">,</span>
+                       <span class="s1">&#39;OVER&#39;</span><span class="p">,</span> <span class="s1">&#39;ALTENGAMME&#39;</span><span class="p">]</span>
+    
+            <span class="n">po_nordsee</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BORKUM+FISCHERBALJE&#39;</span><span class="p">,</span><span class="s1">&#39;EIDER-SPERRWERK+AP&#39;</span><span class="p">,</span><span class="s1">&#39;BAKE+A&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;B%DCSUM&#39;</span><span class="p">,</span><span class="s1">&#39;DAGEB%DCLL&#39;</span><span class="p">,</span><span class="s1">&#39;HELGOLAND+BINNENHAFEN&#39;</span><span class="p">,</span><span class="s1">&#39;HUSUM&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;H%D6RNUM&#39;</span><span class="p">,</span><span class="s1">&#39;LIST+AUF+SYLT&#39;</span><span class="p">,</span><span class="s1">&#39;NORDERNEY+RIFFGAT&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;WITTD%DCN&#39;</span><span class="p">,</span><span class="s1">&#39;BAKE+C+-+SCHARH%D6RN&#39;</span><span class="p">,</span> <span class="s1">&#39;MITTELGRUND&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;BAKE+Z&#39;</span><span class="p">,</span><span class="s1">&#39;BORKUM+S%DCDSTRAND&#39;</span><span class="p">,</span><span class="s1">&#39;HELGOLAND+S%DCDHAFEN&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;LANGEOOG&#39;</span><span class="p">,</span> <span class="s1">&#39;PELLWORM+ANLEGER&#39;</span><span class="p">,</span> <span class="s1">&#39;SPIEKEROOG&#39;</span><span class="p">,</span>
+                          <span class="s1">&#39;ZEHNERLOCH&#39;</span><span class="p">]</span>
+    
+            <span class="n">po_ems</span>   <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LEERORT&#39;</span><span class="p">,</span> <span class="s1">&#39;PAPENBURG&#39;</span><span class="p">,</span><span class="s1">&#39;EMDEN+NEUE+SEESCHLEUSE&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;EMSH%D6RN&#39;</span><span class="p">,</span> <span class="s1">&#39;DUKEGAT&#39;</span><span class="p">,</span> <span class="s1">&#39;KNOCK&#39;</span><span class="p">,</span><span class="s1">&#39;POGUM&#39;</span><span class="p">,</span> <span class="s1">&#39;TERBORG&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;WEENER&#39;</span><span class="p">]</span>
+    
+            <span class="n">po_weser</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BRAKE&#39;</span><span class="p">,</span><span class="s1">&#39;LEUCHTTURM+ALTE+WESER&#39;</span><span class="p">,</span> <span class="s1">&#39;RECHTENFLETH&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;BHV+ALTER+LEUCHTTURM&#39;</span><span class="p">,</span> <span class="s1">&#39;DWARSGAT&#39;</span><span class="p">,</span><span class="s1">&#39;ROBBENS%DCDSTEERT&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;NORDENHAM&#39;</span><span class="p">,</span> <span class="s1">&#39;ELSFLETH&#39;</span><span class="p">,</span> <span class="s1">&#39;FARGE&#39;</span><span class="p">,</span> <span class="s1">&#39;VEGESACK&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;OSLEBSHAUSEN&#39;</span><span class="p">]</span>
+        
+            <span class="n">po_oste</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;BELUM&#39;</span><span class="p">]</span>
+    
+            <span class="n">po_jade</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;WHV+ALTER+VORHAFEN&#39;</span><span class="p">,</span><span class="s1">&#39;WANGEROOGE+NORD&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;WHV+NEUER+VORHAFEN&#39;</span><span class="p">,</span> <span class="s1">&#39;WANGEROOGE+WEST+&#39;</span><span class="p">,</span><span class="s1">&#39;WANGEROOGE+OST&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;SCHILLIG&#39;</span><span class="p">,</span> <span class="s1">&#39;MELLUMPLATE&#39;</span><span class="p">,</span> <span class="s1">&#39;HOOKSIELPLATE&#39;</span><span class="p">]</span>
+    
+            <span class="c1"># BSH-Pegel ID-Names</span>
+            <span class="n">pegl_ids_elbe</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_508P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_504P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_506P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_682P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_688P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_690R&#39;</span><span class="p">,</span><span class="s1">&#39;pgl_695P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_697P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_698P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_700R&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_703P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_704R&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_709P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_711P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_712P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_714P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_717P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_731P&#39;</span><span class="p">,</span><span class="s1">&#39;pgl_732A&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_732D&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;otterndo&#39;</span><span class="p">,</span> <span class="s1">&#39;blankene&#39;</span><span class="p">,</span> <span class="s1">&#39;seemanns&#39;</span><span class="p">,</span> <span class="s1">&#39;schoeste&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;hhharbur&#39;</span><span class="p">,</span> <span class="s1">&#39;bunthaus&#39;</span><span class="p">,</span> <span class="s1">&#39;over&#39;</span>    <span class="p">,</span> <span class="s1">&#39;altengam&#39;</span><span class="p">]</span>
+                
+            <span class="n">pegl_ids_nordsee</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_101P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_664P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_677C&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_505P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_635P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_509A&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_510P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_624P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;pgl_617P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_111P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_631P&#39;</span><span class="p">,</span> <span class="s1">&#39;bake_c&#39;</span>  <span class="p">,</span> 
+                                <span class="s1">&#39;mittelgr&#39;</span><span class="p">,</span> <span class="s1">&#39;bake_z&#39;</span><span class="p">,</span>   <span class="s1">&#39;borkum_s&#39;</span><span class="p">,</span> <span class="s1">&#39;helgol_s&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;langeoog&#39;</span><span class="p">,</span> <span class="s1">&#39;pellworm&#39;</span><span class="p">,</span> <span class="s1">&#39;spiekero&#39;</span><span class="p">,</span> <span class="s1">&#39;zehnerlo&#39;</span><span class="p">]</span>
+                
+            <span class="n">pegl_ids_ems</span>     <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_806P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_814P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_507P&#39;</span><span class="p">,</span> <span class="s1">&#39;emshoern&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;dukegat&#39;</span> <span class="p">,</span> <span class="s1">&#39;knock&#39;</span>   <span class="p">,</span> <span class="s1">&#39;pogum&#39;</span>   <span class="p">,</span> <span class="s1">&#39;terborg&#39;</span> <span class="p">,</span>
+                                <span class="s1">&#39;weener&#39;</span><span class="p">]</span>
+    
+            <span class="n">pegl_ids_weser</span>   <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_743P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_734P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_741B&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_103P&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;dwarsgat&#39;</span><span class="p">,</span> <span class="s1">&#39;robbenst&#39;</span><span class="p">,</span><span class="s1">&#39;nordenha&#39;</span><span class="p">,</span> <span class="s1">&#39;elsfleth&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;farge&#39;</span>   <span class="p">,</span> <span class="s1">&#39;vegesack&#39;</span><span class="p">,</span><span class="s1">&#39;pgl_502P&#39;</span><span class="p">]</span>
+    
+            <span class="n">pegl_ids_oste</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_683P&#39;</span><span class="p">]</span>
+    
+            <span class="n">pegl_ids_jade</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;pgl_512P&#39;</span><span class="p">,</span> <span class="s1">&#39;pgl_754P&#39;</span><span class="p">,</span> <span class="s1">&#39;whv_neuV&#39;</span><span class="p">,</span> <span class="s1">&#39;wange_we&#39;</span><span class="p">,</span>
+                                <span class="s1">&#39;wange_os&#39;</span><span class="p">,</span> <span class="s1">&#39;schillig&#39;</span><span class="p">,</span> <span class="s1">&#39;mellumpl&#39;</span><span class="p">,</span> <span class="s1">&#39;hooksiel&#39;</span><span class="p">]</span>
+            
+            <span class="k">def</span> <span class="nf">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="s1">&#39;wb&#39;</span><span class="p">):</span> 
+                <span class="c1">#if not os.path.isfile(output):</span>
+                <span class="n">req</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">modus</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">req</span><span class="o">.</span><span class="n">iter_content</span><span class="p">(</span><span class="mi">100000</span><span class="p">):</span>
+                    <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+                <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  
+           
+            <span class="c1">#print(&#39;Pegelonlinedownload: &#39;+ self.pid)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span><span class="n">dates</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">date_array</span><span class="p">):</span> <span class="c1"># Loop over dates     </span>
+                <span class="c1"># If first date, write modus, else append modus</span>
+                <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">modus</span> <span class="o">=</span> <span class="s1">&#39;wb&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">modus</span> <span class="o">=</span> <span class="s1">&#39;ab&#39;</span>   
+                               
+                <span class="c1"># Download elbe data</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_elbe</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_elbe</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/ELBE/&#39;</span><span class="o">+</span><span class="n">po_elbe</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">dates</span><span class="o">+</span>
+                           <span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span> <span class="o">+</span> <span class="n">pegl_ids_elbe</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>
+    
+                <span class="c1"># Download Nordsee data</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_nordsee</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_nordsee</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/NORDSEE/&#39;</span><span class="o">+</span><span class="n">po_nordsee</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span>
+                           <span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">dates</span><span class="o">+</span><span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span><span class="o">+</span><span class="n">pegl_ids_nordsee</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>
+          
+                <span class="c1"># Download Ems data</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_ems</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_ems</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/EMS/&#39;</span><span class="o">+</span><span class="n">po_ems</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">dates</span><span class="o">+</span><span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span><span class="o">+</span><span class="n">pegl_ids_ems</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>
+        
+                <span class="c1"># Download Weser data</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_weser</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_weser</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/WESER/&#39;</span><span class="o">+</span><span class="n">po_weser</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span>
+                           <span class="n">dates</span><span class="o">+</span><span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span><span class="o">+</span><span class="n">pegl_ids_weser</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>      
+        
+                <span class="c1"># Download Oste data</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_oste</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_oste</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/OSTE/&#39;</span><span class="o">+</span><span class="n">po_oste</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;/&#39;</span><span class="o">+</span><span class="n">dates</span><span class="o">+</span>
+                           <span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span><span class="o">+</span><span class="n">pegl_ids_oste</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>                        
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>
+                           
+                <span class="c1"># Download Jade data</span>
+                <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">pid</span> <span class="ow">in</span> <span class="n">pegl_ids_jade</span><span class="p">:</span>
+                    <span class="n">i</span> <span class="o">=</span> <span class="n">pegl_ids_jade</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                    <span class="n">url</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;https://www.pegelonline.wsv.de/webservices/files/&#39;</span><span class="o">+</span>
+                           <span class="s1">&#39;Wasserstand+Rohdaten/JADE/&#39;</span><span class="o">+</span><span class="n">po_jade</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;/&#39;</span>
+                           <span class="o">+</span><span class="n">dates</span><span class="o">+</span><span class="s1">&#39;/down.txt&#39;</span><span class="p">)</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a_dir</span><span class="o">+</span><span class="n">pegl_ids_jade</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;.txt&#39;</span>
+                    <span class="n">get_pon</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="n">output</span><span class="p">,</span><span class="n">modus</span><span class="o">=</span><span class="n">modus</span><span class="p">)</span>  
+                                  
+            <span class="bp">self</span><span class="o">.</span><span class="n">pon_filename</span> <span class="o">=</span> <span class="n">output</span>                 </div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Luis Becker
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

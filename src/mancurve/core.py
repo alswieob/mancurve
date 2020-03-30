@@ -3,7 +3,7 @@
 This script runs the operational manual waterlevel forecast curve construction.
 It can be executed from the command line.
 """
-import logging
+
 import subprocess
 import os
 import numpy as np
@@ -24,18 +24,33 @@ __author__ = "Luis Becker"
 __copyright__ = "Luis Becker"
 __license__ = "mit"
 
-_logger = logging.getLogger(__name__)
-
 class Object(object):
+    '''
+    Hilfsobjekt definieren, um später Daten als Attribut ansprechen zu können.
+    '''
     pass
 
 class combine_curves():
+    '''
+    Hauptklasse mit allen Attributen und Methoden, die notwendig sind, um
+    eine manuelle Kurve zu erzeugen.
+    
+    '''
     def __init__(self):
+        '''
+        Directories initialisieren. Nicht benötigten Standard-Unix output
+        in self.FNULL umleiten.
+        
+        '''
         self.FNULL = open(os.devnull, 'w')
         self.aim_dir = os.path.abspath('../../data/temp/')
         self.aim_dir = os.path.join(self.aim_dir, '')
         
     def clear_old_data(self):
+        '''
+        Alte temporäre Daten bereinigen.
+        
+        '''
         path  = os.path.abspath('../../data/temp/')
         path  = os.path.join(path, '')
         
@@ -48,6 +63,7 @@ class combine_curves():
     def summarize_figures(self):
         '''
         Optional function to combine all figures into 1 pdf: requires PIL
+        
         '''
         import PIL
         path    = os.path.abspath('../../data/figs/')
@@ -62,11 +78,13 @@ class combine_curves():
         vert = []
         for i in np.arange(0,n,2):
             ims = imgs[i:i+2]
-            imgs_comb = np.hstack( [np.asarray( i.resize(min_shape) ) for i in ims ] )
+            imgs_comb = np.hstack( [np.asarray( i.resize(min_shape) ) 
+                                    for i in ims ] )
         
             # save that beautiful picture
             imgs_comb = PIL.Image.fromarray( imgs_comb)
-            outfile   = os.path.abspath('../../data/output/combined'+str(i)+'.png')
+            outfile   = os.path.abspath("../../data/output/combined"+
+                                        str(i)+".png")
             vert.append(outfile)
             imgs_comb.save(outfile)    
         
@@ -86,6 +104,11 @@ class combine_curves():
         os.rename(f1,f2)
     
     def summarize_data(self):
+        '''
+        Methode, um alle Daten zusammenzufassen. Sie werden in das Hdf5-File
+        des aktuellen Tages, mit einem Zeitstempel versehen, geschrieben.
+        
+        '''
         x = glob.glob(os.path.abspath('../../data/output/*.h5'))
         today = dt.datetime.now().strftime('%Y%m%d')
         new_file = '../../data/data/'+today+'.h5'
@@ -102,9 +125,18 @@ class combine_curves():
 
     def get_current_NWHW(self, download = True,
                          zeitpunkt = dt.datetime(2020,2,1,12,16)):       
+        ''' Neueste manuelle Vorhersage oder archivierte Vorhersage beziehen.
+        
+        :param download: Schalter, ob download der aktuellsten Daten oder Zeitpunkt
+        :param zeitpunkt: Falls kein download, gewünschter Zeitpunkt
+        :type download: Bool
+        :type zeitpunkt: datetime object
+        
+        '''
         if download:
             # NWHW
-            cmd = 'ssh bm11mos@linwvd10 ls /FEWS/HWNW_Vorhersage/HWNW* | tail -1'    
+            cmd = ("ssh bm11mos@linwvd10 ls "
+                   "/FEWS/HWNW_Vorhersage/HWNW* | tail -1")    
             p = subprocess.Popen(cmd,shell=True,stdout = subprocess.PIPE
                                  ,stderr = subprocess.PIPE)
             p.wait()
@@ -117,7 +149,8 @@ class combine_curves():
                                  stdout = self.FNULL,
                                  stderr = subprocess.STDOUT)
             p.wait()
-            aim_file =  os.path.join(self.aim_dir, filename.rsplit('/', 1)[-1].strip())
+            aim_file =  os.path.join(self.aim_dir,
+                                     filename.rsplit('/', 1)[-1].strip())
             
         else:            
             x = df.nwhw(zeitpunkt)
@@ -126,6 +159,12 @@ class combine_curves():
         self.filename = aim_file
    
     def get_eformat(self, download = False):
+        ''' E-Format des Jahres beziehen. Für mittleres HW|NW.
+        
+        :param download: Schalter, ob download der aktuellsten Daten oder Zeitpunkt
+        :type download: Bool
+        
+        '''
         self.dirname = os.path.dirname(__file__)
         self.aim_dir = os.path.abspath('../../data/temp/')
         # Add trailing slash
@@ -139,8 +178,8 @@ class combine_curves():
             
             # EFORMAT: Mittlere Hoch-Niedrigwasser
             if download:
-                cmd = ("ssh bm14gast@lingezeiten11 ls /data/vb_hwnw/deu"+year+"/"
-                        "*"+pegel[-4:]+"*")  
+                cmd = ("ssh bm14gast@lingezeiten11 ls /data/vb_hwnw/deu"
+                       +year+"/*"+pegel[-4:]+"*")  
                 p = subprocess.Popen(cmd,shell=True,stdout = subprocess.PIPE
                                     ,stderr = subprocess.PIPE)
                 filename = p.stdout.read().decode()
@@ -154,7 +193,7 @@ class combine_curves():
                                      stderr = subprocess.STDOUT)
                 p.wait()
                 filename = self.aim_dir + filename.rsplit('/', 1)[-1].strip()
-                self.read_NWHW_file(filename,pegel)  
+                self.read_EFORMAT_file(filename,pegel)  
             else:
                 break
             
@@ -162,13 +201,22 @@ class combine_curves():
             # Get Special Event / year / archive
             files = os.listdir(os.path.abspath('../../data/arch/EFORMAT'))
             pnames = ['pgl' + x[-13:-8] for x in files]
-            files  = [os.path.join(os.path.abspath('../../data/arch/EFORMAT'),x) for x in files]           
+            files  = [os.path.join(os.path.abspath(
+                      '../../data/arch/EFORMAT'),x) for x in files]           
             for idx,source_file in enumerate(files):            
                 shutil.copy2(source_file,self.aim_dir)
-                self.read_NWHW_file(source_file, pnames[idx])
+                self.read_EFORMAT_file(source_file, pnames[idx])
         
 
-    def read_NWHW_file(self,filename,pegel):
+    def read_EFORMAT_file(self,filename,pegel):
+        ''' Liest MHW|MNW aus EFORMAT File.
+        
+        :param filename: Dateiname
+        :param pegel: Falls kein download, gewünschter Zeitpunkt
+        :type filename: Bool
+        :type pegel: datetime object
+        
+        '''
         with open(filename, mode = 'rb') as f:
             for idx,line in enumerate(f):
                 if idx == 21:
@@ -182,6 +230,14 @@ class combine_curves():
                     break         
 
     def get_mos(self, download = False,zeitpunkt = dt.datetime(2020,2,1,12,16)):
+        ''' Aktuellste MOS-Daten beziehen oder aus Archiv laden.
+        
+        :param download: Schalter, ob download der aktuellsten Daten oder Zeitpunkt
+        :param zeitpunkt: Falls kein download, gewünschter Zeitpunkt
+        :type download: Bool
+        :type zeitpunkt: datetime object
+        
+        '''
         self.mos_data = {}
         self.old_mos = {}
         #self.ast_data = {}        
@@ -190,8 +246,9 @@ class combine_curves():
         if download:
             for pegel in self.stations:            
                 # MOS
-                cmd = 'ssh bm11mos@linwvd10 ls /data_MOS/bm11mos/1704/output/*' +\
-                       pegel+'* | tail -1'
+                cmd = ("ssh bm11mos@linwvd10 ls "
+                       "/data_MOS/bm11mos/1704/output/*" +
+                       pegel+"* | tail -1")
                 p = subprocess.Popen(cmd,shell=True,stdout = subprocess.PIPE
                                      ,stderr = subprocess.PIPE)
                 filename = p.stdout.read().decode()
@@ -214,8 +271,8 @@ class combine_curves():
         else:
             x = df.mos(zeitpunkt = zeitpunkt, freq=15)
             x.main()
-            source_file = ("/home/bm1483/Development/manuelle_kurve"
-                           "/scenarios/mos_data.h5")          
+            pname = os.path.join(os.path.abspath("../../data/scenarios/"),"")
+            source_file = (pname + "mos_data.h5")          
             data = pd.read_hdf(source_file,'table')
             for pegel in self.stations:
                 self.mos_data[pegel] = data[pegel]  
@@ -223,8 +280,10 @@ class combine_curves():
             self.mos_errstate = x.mos_errstate
                
     def read_NWHW(self):
-        self.NWHW = {}
-        #x = np.loadtxt(self.filename, dtype=str)       
+        '''Manuelle Vorhersage-Datei lesen
+        
+        '''
+        self.NWHW = {}     
         x = np.genfromtxt(self.filename,dtype=str, delimiter = [12,14,14,16])
         
         self.stations = ['pgl_'+y[1:5] for y in x[:,0]]
@@ -239,7 +298,7 @@ class combine_curves():
             dt_obj_Timezoned = timezone('Europe/Berlin').localize(
                     dt.datetime.strptime(x[idx,1],"%Y%m%d%H%M%S"))
             utc_datetime = dt_obj_Timezoned.astimezone(timezone('UTC'))  
-            utc_datetime = utc_datetime.replace(tzinfo=None)# Remove timezone Information
+            utc_datetime = utc_datetime.replace(tzinfo=None)                   # Remove timezone Information
             timearray[name].append(utc_datetime)
 
             values = [float(x.replace(',','.')) for x in 
@@ -267,15 +326,16 @@ class combine_curves():
             
             # Range festlegen aus Textbaustein Vorhersageintervall
             data[name].loc[abs(data[name]['avg']) <= .5, 'range'] = .1
-            data[name].loc[(abs(data[name]['avg']) > .5) & (data[name]['avg'] <= 1.5), 'range'] = .125
+            data[name].loc[(abs(data[name]['avg']) > .5) &
+                           (data[name]['avg'] <= 1.5), 'range'] = .125
             data[name].loc[abs(data[name]['avg']) > 1.5, 'range'] = .25
             
             self.NWHW[name] = data[name]             
      
     def load_mos(self):
-        """ Loads MOS. Attaches
-        the data to attributes of class instance. Calculates trend 
-        from data.
+        """ Loads MOS. Starts checking routines (plausability).
+        Attaches the data to attributes of class instance.
+        
         """           
         # MOS and Astronomic Prediction
         fh = open(self.mos_filename,"r")
@@ -323,6 +383,7 @@ class combine_curves():
         
         :return: If MOS-Data is plausible
         :rtype: Bool
+        
         """
         
         valid_r = np.zeros((len(new_r),len(mos_dict[new_r[0]])))
@@ -396,6 +457,16 @@ class combine_curves():
 
     
     def get_obs(self,download = False,zeitpunkt = dt.datetime(2020,2,1,12,16)):
+        ''' Beobachtungsdaten etnweder direkt von Pegelonline laden oder
+        aus dem Archiv beziehen. Für den Download-Fall das Hilfspaket laden
+        und dort werden die Plausabilitätsprüfungen durchgeführt.
+        
+        :param download: Schalter, ob download der aktuellsten Daten oder Zeitpunkt
+        :param zeitpunkt: Falls kein download, gewünschter Zeitpunkt
+        :type download: Bool
+        :type zeitpunkt: datetime object
+        
+        '''
         self.po = {}
         self.obs_errstate = {}
         if download:
@@ -410,13 +481,12 @@ class combine_curves():
                 if np.isnan(self.po[key].data.to_numpy()).all():
                     print(key + ': No observation data')
                     self.obs_errstate[key] = 1   
-        else:            
+        else:        
             p = df.pegelonline(zeitpunkt, freq=1)
             p.store_data_part()
             
-        
-            inp = pd.read_hdf("/home/bm1483/Development/manuelle_kurve"
-                        "/scenarios/pon_data.h5", 'table')*0.01
+            pname = os.path.join(os.path.abspath("../../data/scenarios/"),"")
+            inp = pd.read_hdf(pname + "pon_data.h5", 'table')*0.01
                               
             for key in self.stations:
                 try:    
@@ -434,11 +504,13 @@ class combine_curves():
                     print(key + ': No observation data')
                     self.obs_errstate[key] = 1              
                      
-    def prepare_data(self):
-        # Dont get lost of data origin
+    def construct_curve(self):
+        ''' Hauptmethode, die aus den Eingangsdaten eine manuelle Kurve
+        erzeugt.
+        
+        '''
+        # Dont get lost of data 
         self.inp_mos = {}
-        # Resample data:
-        #  neuer Index: 
         for key in self.mos_data:           
             # Reorganize MOS _data
             # Resample frequency to 1 Minute
@@ -451,7 +523,9 @@ class combine_curves():
             self.mos_data[key]['waterlevel'] = savgol_filter(
                             self.mos_data[key]['waterlevel'].to_numpy(),141,2)  
             
+            #Interpolierte Daten behalten
             self.inp_mos[key] = self.mos_data[key]
+            
             # Add Observation and create one time series
             # Create complete index from start of observation to end of
             # mos / ast forecast
@@ -462,9 +536,8 @@ class combine_curves():
                                               self.po[key].data.index)]])             
             else:
                 c_df = self.mos_data[key]
-            
-            # Verschiebung der MOS-Kurve beim Übergang von Beobachtung zu
-            # Vorhersage
+                
+            # Datenlücken zwischen Beobachtung und MOS/Astronomie behandeln
             if self.obs_errstate[key] < 1:
                 i = 0
                 x = np.nan
@@ -479,10 +552,10 @@ class combine_curves():
                         i+=1
                         continue
                     i+=1
-                # NANs auffüllen 
-                # (linear interpoliert), und erst dann Kurven verbinden:
+                    
+                # NANs auffüllen und erst dann Kurven verbinden:
                 if i < 60:
-                    # Extrapolate
+                    # Extrapolate Observation
                     odt = (self.po[key].data.at[
                             self.po[key].data.index[-1],
                             'waterlevel']-
@@ -505,7 +578,6 @@ class combine_curves():
             # Kurven zusammenführen und Nans auffüllen
             mos = pd.DataFrame(c_df, index = c_df.index.copy())
             mos = mos.resample('60S').asfreq()
-            #mos = mos.interpolate(method='linear') 
             self.mos_data[key] = pd.DataFrame(c_df, 
                                               index = c_df.index.copy(),
                                               columns = c_df.columns.copy())
@@ -531,6 +603,7 @@ class combine_curves():
             self.NWHW[key] = mf.copy()
                  
             # Manuelle Vorhersage auf MOS HW/NW Zeitpunkt verschieben
+            # Hierzu die lokalen Maxima/Minima um den manuellen Zeitpunkt finden
             new_index = []
             #if self.mos_errstate[key] < 1:
             for idx,i in enumerate(mf['IDX']):   
@@ -549,14 +622,15 @@ class combine_curves():
                   columns = mf.columns.copy()) 
             mf['IDX'] = np.arange(len(mf.index))
             
-            # Punktauswahl für GPR
+            # Nans rauswerfen
             mf             = mf.dropna()
             self.NWHW[key] = mf.copy()
                 
             # Ignore 1. Manual forecast, if it is to close to observation
             # or if it is in the past
             if self.obs_errstate[key] < 1:
-                while (mf.index[0] - self.po[key].data.index[-1]) < dt.timedelta(hours=2):
+                while ((mf.index[0] - self.po[key].data.index[-1])
+                        < dt.timedelta(hours=2)):
                     mf = mf.iloc[1:]
                 else:
                     pass
@@ -569,11 +643,14 @@ class combine_curves():
                 
             # Calculate difference between curves at manual forecast 
             # times and difference between obsveration and first value of mos
+            
+            # Last Obersavtion Index 
             if self.obs_errstate[key] < 1:
                 o_idx = self.po[key].data.index[-1]
             else:
                 o_idx = mos.index[0]  
             
+            # Erster Differenzwert
             if self.obs_errstate[key] < 1:    
                 try:                   
                     delta = pd.DataFrame(
@@ -589,9 +666,12 @@ class combine_curves():
                 delta = pd.DataFrame(0,index=[o_idx],
                                      columns = ['waterlevel'])
                 
+            # Für die Ereignisse Differenzen berechnen
             for lm,l in enumerate(mf['IDX']):
-                delta = delta.append(pd.DataFrame(mos.iloc[l,mos.columns.get_loc('waterlevel')]
-                              -mf.iloc[lm,mf.columns.get_loc('avg')],index=[mos.index[l]],
+                delta = delta.append(pd.DataFrame(mos.iloc[
+                              l,mos.columns.get_loc('waterlevel')]
+                              -mf.iloc[lm,mf.columns.get_loc('avg')],
+                              index=[mos.index[l]],
                               columns = ['waterlevel']))
           
             # 8 hours after last HW/NW no delta
@@ -603,7 +683,8 @@ class combine_curves():
             # Interpolate differences linearly
             delta = delta.resample('60S').asfreq()   
             delta = delta.interpolate(method='linear')
-            #print(delta)
+            
+            # Restructure and fill Nans with 0
             delta = pd.DataFrame(delta, index = mos.index,
                                  columns = ['waterlevel'])
             delta = delta.fillna(0)
@@ -616,13 +697,22 @@ class combine_curves():
             self.complete_mos = mos.copy()
             
             # Start GPR
-            self.GPR_MANU(key, mf, mos) 
+            self.plotting_and_output(key, mf, mos) 
               
         
-    def GPR_MANU(self, key, mf, mos):
-        # Glättung
-        #smooth = savgol_filter(self.complete_mos['waterlevel'].to_numpy(),
-        #                       135,2)  
+    def plotting_and_output(self, key, mf, mos):
+        '''Daten darstellen und Output schreiben.
+        
+        :param key: pegelname
+        :param mf:  Ursprüngliche manuelle Vorhersage
+        :param mos: Gesamte manuelle Daten
+        
+        :type key: strin
+        :type mf: pandas DataFrame
+        :type mos: pandas DataFrame
+        
+        '''
+        # Als numpy array für Schreibroutine
         smooth = self.complete_mos['waterlevel'].to_numpy()       
 
         # Plot results
@@ -630,8 +720,6 @@ class combine_curves():
         
         fig = plt.figure(figsize=(10, 5))
         lw = 3
-        colors = {'NWHW': "#1f77b4",'lin':'#2ca02c','Pchip':'#9467bd',
-                  'mos':'navy'}
                 
         if self.obs_errstate[key] < 1:
             plt.plot(self.po[key].data.index,self.po[key].data['waterlevel'],
@@ -724,8 +812,9 @@ class combine_curves():
 
 if __name__ == '__main__':
     d = False
-    zeitpunkt = dt.datetime(2017,10,29,7,00)
-    #zeitpunkt = dt.datetime(2020,3,1,9,00)
+        
+    #zeitpunkt = dt.datetime(2017,10,29,7,00)
+    zeitpunkt = dt.datetime(2020,2,10,9,00)
     stime1 = time.time()
     x = combine_curves()
     
@@ -749,7 +838,7 @@ if __name__ == '__main__':
     
     
     print('# Kurven zusammenfügen #')
-    x.prepare_data()
+    x.construct_curve()
     x.clear_old_data()
     #x.summarize_figures()   
     #x.summarize_data()

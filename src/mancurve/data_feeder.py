@@ -19,6 +19,15 @@ from itertools import compress
 
 class pegelonline():
     def __init__(self,endzeitpunkt, freq=1):
+        '''Teil einer Zeitreihe aus Beobachtung schneiden. 24 Stunden
+        bis zum Endzeitpunkt.
+        
+        :param endzeitpunkt: Letzter Zeitpunkt in Zeitreihe
+        :param freq: Frequenz [min]
+        :type endzeitpunkt: datetime Object
+        :type freq: Integer     
+        
+        '''
         self.end  = endzeitpunkt
         self.freq = str(freq)+'min'
         # Um zwei komplette Tage einzulesen
@@ -58,10 +67,18 @@ class pegelonline():
                             columns = self.pegel,
                             index = self.new_idx)
         
-        po_t.to_hdf("/home/bm1483/Development/manuelle_kurve"
-                    "/scenarios/pon_data.h5", 'table')
+        pname = os.path.join(os.path.abspath("../../data/scenarios/"),"")
+        po_t.to_hdf(pname+"pon_data.h5", 'table')
         
     def load_po_data(self,path,datum):
+        ''' Loads pegelonline HDF5 file.
+        
+        :param path: Pfad zur Datei
+        :param datum: Datum 
+        :type path: string
+        :type datum: string [%Y_%m_%d]
+        
+        '''
         timestamp = datum.replace('_','') 
         data = pd.read_hdf("{0}{1}".format(path,'/Pegelonline_'+
                            timestamp+'.h5'),'OBS')
@@ -69,7 +86,15 @@ class pegelonline():
         return data
     
 class mos():
-    def __init__(self,zeitpunkt, freq=1):       
+    def __init__(self,zeitpunkt, freq=1):     
+        '''MOS Daten bereitstellen und aus Archiv holen.
+        
+        :param zeitpunkt: Zu betrachtender Zeitpunkt (gleich Endzeitpunkt PO)
+        :param freq: Frequenz [min]
+        :type endzeitpunkt: datetime Object
+        :type freq: Integer     
+        '''
+        
         self.time = zeitpunkt
         self.freq = str(freq)+'min'
         self.mos_data     = {}
@@ -90,6 +115,9 @@ class mos():
             for name in self.metadata}
       
     def prepare_mosdata(self):
+        ''' MOS Daten aus Archiv vorbereiten. Entpacken und die nächste
+        Datei vom Zeitpunkt aus gesehen auswählen.        
+        '''
         mos_path = "{0}{1}{2}".format('/work/bm1483/mos_archiv/',
                                       self.datum,'/')
         
@@ -135,6 +163,8 @@ class mos():
         self.mos_files = glob.glob(mos_path+'*'+self.valid_init+'_*')
         
     def mos_get_h5_part(self):     
+        ''' File öffnen und Daten Laden, resamplen, evlt. interpolieren [1min].
+        '''
         for open_file in self.mos_files:     
             # Read in Mos-Data
             self.pegel_name = open_file.split('/')[-1][:8]           
@@ -147,8 +177,8 @@ class mos():
         self.mos_data = self.mos_data.interpolate(method='linear')       
            
         self.mos_data = self.mos_data.resample(self.freq).asfreq()   
-        self.mos_data.to_hdf("/home/bm1483/Development/manuelle_kurve"
-                             "/scenarios/mos_data.h5", 'table')
+        pname = os.path.join(os.path.abspath("../../data/scenarios/"),"")
+        self.mos_data.to_hdf(pname+"mos_data.h5", 'table')
         
     def get_mos_dictionary(self,filename):
         """ Liest mos.txt File ein und gibt ein Dictionary mit Daten raus
@@ -284,6 +314,8 @@ class mos():
                      columns = ['waterlevel'])  
             
     def pack_mosdata(self):
+        '''MOS Daten wieder zippen.
+        '''
         # Entpackte einzeldateien wieder löschen
         mos_path = "{0}{1}{2}".format('/work/bm1483/mos_archiv/',
                    self.datum,'/')
@@ -300,12 +332,19 @@ class mos():
         os.chdir(came_from)
             
     def main(self):
+        '''Hauptfunktion führt Teilschritte nacheinander aus.
+        '''
         self.prepare_mosdata()
         self.mos_get_h5_part()
         self.pack_mosdata()
 
 class nwhw():
-    def __init__(self,zeitpunkt):          
+    def __init__(self,zeitpunkt):    
+        '''Nächstgelegene Manueller Vorhersage aus Archiv holen.
+        
+        :param zeitpunkt: Zeitpunkt zur Betrachtung
+        :type endzeitpunkt: datetime Object
+        '''
         self.time = zeitpunkt
         self.folder = zeitpunkt
         self.FNULL = open(os.devnull, 'w')
@@ -321,6 +360,8 @@ class nwhw():
         self.load_file()
                     
     def get_file(self):
+        '''File aus Archiv laden (linwvd10). Vorerst nach Zeitpunkt auswählen.
+        '''
         path = ("/store_linfile11/Vorhersagen/Staumatrix/HWNW_vorhersage"
                 "/"+str(self.folder.year)+"/")
         # NWHW
@@ -346,23 +387,23 @@ class nwhw():
         
         return valid_file
             
-    def load_file(self):               
+    def load_file(self):    
+        ''' Dateien in temporären Ordner verschieben und dne Filenamen ausgeben
+        '''           
+        pname = os.path.join(os.path.abspath("../../data/scenarios/"),"")
+
         cmd = 'bm11mos@linwvd10:' + self.valid_file
-        p = subprocess.Popen(["scp","-T",cmd,"/home/bm1483/Development"
-                              "/manuelle_kurve/scenarios/"],
+        p = subprocess.Popen(["scp","-T",cmd,pname],
                              stdout = self.FNULL,
                              stderr = subprocess.STDOUT)
         p.wait()
 
-        shutil.copy2("/home/bm1483/Development/manuelle_kurve/scenarios/"
-                     +self.valid_file.split('/')[-1],
-                     "/home/bm1483/Development/manuelle_kurve/scenarios"
-                     "/HWNW_Vorhersage.txt")
-        os.remove("/home/bm1483/Development/manuelle_kurve/scenarios/"
-                     +self.valid_file.split('/')[-1])
+        shutil.copy2(pname +self.valid_file.split('/')[-1],
+                     pname +
+                     "HWNW_Vorhersage.txt")
+        os.remove(pname +self.valid_file.split('/')[-1])
         
-        self.valid_file = ("/home/bm1483/Development/manuelle_kurve/scenarios"
-                          "/HWNW_Vorhersage.txt")
+        self.valid_file = (pname+"HWNW_Vorhersage.txt")
         
 if __name__ == '__main__':
     x = pegelonline(dt.datetime(2020,2,1,12,55), freq=15)

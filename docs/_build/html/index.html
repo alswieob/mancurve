@@ -1,0 +1,693 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Mancurve &mdash; mancurve 1.0 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'1.0',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="#" class="icon icon-home"> mancurve
+          
+
+          
+            
+            <img src="_static/logo.gif" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Mancurve</a></li>
+<li><a class="reference internal" href="#hauptklasse-mit-zentralen-methoden">Hauptklasse mit zentralen Methoden</a></li>
+<li><a class="reference internal" href="#klasse-fur-pegelonline-datenbezug">Klasse für Pegelonline Datenbezug</a></li>
+<li><a class="reference internal" href="#klassen-fur-szenariorechnung">Klassen für Szenariorechnung</a></li>
+<li><a class="reference internal" href="#module-mancurve.validation">Paket zur Validation (Plots &amp; Statistik)</a></li>
+</ul>
+</div>
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">mancurve</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Mancurve</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="toctree-wrapper compound">
+</div>
+<div class="section" id="mancurve">
+<h1>Mancurve<a class="headerlink" href="#mancurve" title="Permalink to this headline">¶</a></h1>
+<dl class="docutils">
+<dt>Dokumentation für die Kombination aus</dt>
+<dd>Pegelonline / MOS | Astronomie und manueller Vorhersage.</dd>
+</dl>
+</div>
+<div class="section" id="hauptklasse-mit-zentralen-methoden">
+<h1>Hauptklasse mit zentralen Methoden<a class="headerlink" href="#hauptklasse-mit-zentralen-methoden" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="mancurve.core.combine_curves">
+<em class="property">class </em><code class="descclassname">mancurve.core.</code><code class="descname">combine_curves</code><a class="reference internal" href="_modules/mancurve/core.html#combine_curves"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hauptklasse mit allen Attributen und Methoden, die notwendig sind, um
+eine manuelle Kurve zu erzeugen.</p>
+<dl class="method">
+<dt id="mancurve.core.combine_curves.check_mos">
+<code class="descname">check_mos</code><span class="sig-paren">(</span><em>mos_file_data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.check_mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.check_mos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks MOS Input (calling plausability method) and creates
+array of datetime-strings which is attached as attribute to
+the class instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mos_file_data</strong> (<em>Dictionary</em>) – Dictionary of MOS-Data</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">If Mos data is plausible</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.clear_old_data">
+<code class="descname">clear_old_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.clear_old_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.clear_old_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alte temporäre Daten bereinigen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.construct_curve">
+<code class="descname">construct_curve</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.construct_curve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.construct_curve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hauptmethode, die aus den Eingangsdaten eine manuelle Kurve
+erzeugt.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.get_current_NWHW">
+<code class="descname">get_current_NWHW</code><span class="sig-paren">(</span><em>download=True</em>, <em>zeitpunkt=datetime.datetime(2020</em>, <em>2</em>, <em>1</em>, <em>12</em>, <em>16)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.get_current_NWHW"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.get_current_NWHW" title="Permalink to this definition">¶</a></dt>
+<dd><p>Neueste manuelle Vorhersage oder archivierte Vorhersage beziehen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>download</strong> (<em>Bool</em>) – Schalter, ob download der aktuellsten Daten oder Zeitpunkt</li>
+<li><strong>zeitpunkt</strong> (<em>datetime object</em>) – Falls kein download, gewünschter Zeitpunkt</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.get_eformat">
+<code class="descname">get_eformat</code><span class="sig-paren">(</span><em>download=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.get_eformat"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.get_eformat" title="Permalink to this definition">¶</a></dt>
+<dd><p>E-Format des Jahres beziehen. Für mittleres HW|NW.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>download</strong> (<em>Bool</em>) – Schalter, ob download der aktuellsten Daten oder Zeitpunkt</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.get_mos">
+<code class="descname">get_mos</code><span class="sig-paren">(</span><em>download=False</em>, <em>zeitpunkt=datetime.datetime(2020</em>, <em>2</em>, <em>1</em>, <em>12</em>, <em>16)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.get_mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.get_mos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Aktuellste MOS-Daten beziehen oder aus Archiv laden.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>download</strong> (<em>Bool</em>) – Schalter, ob download der aktuellsten Daten oder Zeitpunkt</li>
+<li><strong>zeitpunkt</strong> (<em>datetime object</em>) – Falls kein download, gewünschter Zeitpunkt</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.get_obs">
+<code class="descname">get_obs</code><span class="sig-paren">(</span><em>download=False</em>, <em>zeitpunkt=datetime.datetime(2020</em>, <em>2</em>, <em>1</em>, <em>12</em>, <em>16)</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.get_obs"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.get_obs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Beobachtungsdaten etnweder direkt von Pegelonline laden oder
+aus dem Archiv beziehen. Für den Download-Fall das Hilfspaket laden
+und dort werden die Plausabilitätsprüfungen durchgeführt.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>download</strong> (<em>Bool</em>) – Schalter, ob download der aktuellsten Daten oder Zeitpunkt</li>
+<li><strong>zeitpunkt</strong> (<em>datetime object</em>) – Falls kein download, gewünschter Zeitpunkt</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.load_mos">
+<code class="descname">load_mos</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.load_mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.load_mos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads MOS. Starts checking routines (plausability).
+Attaches the data to attributes of class instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.plausability">
+<code class="descname">plausability</code><span class="sig-paren">(</span><em>mos_dict</em>, <em>new_r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.plausability"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.plausability" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks MOS on plausability.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mos_dict</strong> (<em>Dictionary</em>) – Dictionary with MOS-Data</li>
+<li><strong>new_r</strong> (<em>List</em>) – Valid “Rückfall-Positionen” (Ohne Fehlerwerte)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">If MOS-Data is plausible</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.plotting_and_output">
+<code class="descname">plotting_and_output</code><span class="sig-paren">(</span><em>key</em>, <em>mf</em>, <em>mos</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.plotting_and_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.plotting_and_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Daten darstellen und Output schreiben.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>key</strong> (<em>strin</em>) – pegelname</li>
+<li><strong>mf</strong> (<em>pandas DataFrame</em>) – Ursprüngliche manuelle Vorhersage</li>
+<li><strong>mos</strong> (<em>pandas DataFrame</em>) – Gesamte manuelle Daten</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.read_EFORMAT_file">
+<code class="descname">read_EFORMAT_file</code><span class="sig-paren">(</span><em>filename</em>, <em>pegel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.read_EFORMAT_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.read_EFORMAT_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Liest MHW|MNW aus EFORMAT File.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filename</strong> (<em>Bool</em>) – Dateiname</li>
+<li><strong>pegel</strong> (<em>datetime object</em>) – Falls kein download, gewünschter Zeitpunkt</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.read_NWHW">
+<code class="descname">read_NWHW</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.read_NWHW"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.read_NWHW" title="Permalink to this definition">¶</a></dt>
+<dd><p>Manuelle Vorhersage-Datei lesen</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.summarize_data">
+<code class="descname">summarize_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.summarize_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.summarize_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Methode, um alle Daten zusammenzufassen. Sie werden in das Hdf5-File
+des aktuellen Tages, mit einem Zeitstempel versehen, geschrieben.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.core.combine_curves.summarize_figures">
+<code class="descname">summarize_figures</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/core.html#combine_curves.summarize_figures"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.core.combine_curves.summarize_figures" title="Permalink to this definition">¶</a></dt>
+<dd><p>Optional function to combine all figures into 1 pdf: requires PIL</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="klasse-fur-pegelonline-datenbezug">
+<h1>Klasse für Pegelonline Datenbezug<a class="headerlink" href="#klasse-fur-pegelonline-datenbezug" title="Permalink to this headline">¶</a></h1>
+<dl class="method">
+<dt id="mancurve.pegelonline_getter.pegelonline_timeseries.__init__">
+<code class="descclassname">pegelonline_timeseries.</code><code class="descname">__init__</code><span class="sig-paren">(</span><em>pegel_id</em>, <em>storedir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/pegelonline_getter.html#pegelonline_timeseries.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.pegelonline_getter.pegelonline_timeseries.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Starts Class-Object and directly loads newest data for one location.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pegel_id</strong> (<em>string</em>) – BSH-Pegelnummer</li>
+<li><strong>storedir</strong> (<em>string</em>) – Speicherort</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="mancurve.pegelonline_getter.pegelonline_timeseries">
+<em class="property">class </em><code class="descclassname">mancurve.pegelonline_getter.</code><code class="descname">pegelonline_timeseries</code><span class="sig-paren">(</span><em>pegel_id</em>, <em>storedir</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/pegelonline_getter.html#pegelonline_timeseries"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.pegelonline_getter.pegelonline_timeseries" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="mancurve.pegelonline_getter.pegelonline_timeseries.get_newest_data">
+<code class="descname">get_newest_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/pegelonline_getter.html#pegelonline_timeseries.get_newest_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.pegelonline_getter.pegelonline_timeseries.get_newest_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Download newest numerical oberservation
+data (pegelonline). Data will be stored in the  “self.a_dir” directory.</p>
+<p>Pegelonline data is downloaded from www.pegelonline.wsv.de</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.pegelonline_getter.pegelonline_timeseries.load_data">
+<code class="descname">load_data</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/pegelonline_getter.html#pegelonline_timeseries.load_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.pegelonline_getter.pegelonline_timeseries.load_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads Pegelonline data. Attaches
+the data to attributes of class instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.pegelonline_getter.pegelonline_timeseries.read_pegelonline">
+<code class="descname">read_pegelonline</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/pegelonline_getter.html#pegelonline_timeseries.read_pegelonline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.pegelonline_getter.pegelonline_timeseries.read_pegelonline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads and checks Pegelonline.txt File.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="klassen-fur-szenariorechnung">
+<h1>Klassen für Szenariorechnung<a class="headerlink" href="#klassen-fur-szenariorechnung" title="Permalink to this headline">¶</a></h1>
+<dl class="method">
+<dt id="mancurve.data_feeder.pegelonline.__init__">
+<code class="descclassname">pegelonline.</code><code class="descname">__init__</code><span class="sig-paren">(</span><em>endzeitpunkt</em>, <em>freq=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#pegelonline.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.pegelonline.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Teil einer Zeitreihe aus Beobachtung schneiden. 24 Stunden
+bis zum Endzeitpunkt.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>endzeitpunkt</strong> (<em>datetime Object</em>) – Letzter Zeitpunkt in Zeitreihe</li>
+<li><strong>freq</strong> (<em>Integer</em>) – Frequenz [min]</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="mancurve.data_feeder.pegelonline">
+<em class="property">class </em><code class="descclassname">mancurve.data_feeder.</code><code class="descname">pegelonline</code><span class="sig-paren">(</span><em>endzeitpunkt</em>, <em>freq=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#pegelonline"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.pegelonline" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="mancurve.data_feeder.pegelonline.load_po_data">
+<code class="descname">load_po_data</code><span class="sig-paren">(</span><em>path</em>, <em>datum</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#pegelonline.load_po_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.pegelonline.load_po_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Loads pegelonline HDF5 file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>path</strong> (<em>string</em>) – Pfad zur Datei</li>
+<li><strong>datum</strong> (<em>string</em><em> [</em><em>%Y_%m_%d</em><em>]</em>) – Datum</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.pegelonline.store_data_part">
+<code class="descname">store_data_part</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#pegelonline.store_data_part"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.pegelonline.store_data_part" title="Permalink to this definition">¶</a></dt>
+<dd><p>Erzeugt ein HDF5 file, dass die Beobachtungsdaten für den
+Zeitpunkt -48h enthält. Dafür werden die 24h-Dateien
+eingelesen und ein neuer Array erzeugt.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.__init__">
+<code class="descclassname">mos.</code><code class="descname">__init__</code><span class="sig-paren">(</span><em>zeitpunkt</em>, <em>freq=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>MOS Daten bereitstellen und aus Archiv holen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>zeitpunkt</strong> – Zu betrachtender Zeitpunkt (gleich Endzeitpunkt PO)</li>
+<li><strong>freq</strong> (<em>Integer</em>) – Frequenz [min]</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="mancurve.data_feeder.mos">
+<em class="property">class </em><code class="descclassname">mancurve.data_feeder.</code><code class="descname">mos</code><span class="sig-paren">(</span><em>zeitpunkt</em>, <em>freq=1</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="mancurve.data_feeder.mos.check_mos">
+<code class="descname">check_mos</code><span class="sig-paren">(</span><em>mos_file_data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.check_mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.check_mos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks MOS Input (calling plausability method) and creates
+array of datetime-strings which is attached as attribute to
+the class instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>mos_file_data</strong> (<em>Dictionary</em>) – Dictionary of MOS-Data</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">If Mos data is plausible</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Bool</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.get_mos_dictionary">
+<code class="descname">get_mos_dictionary</code><span class="sig-paren">(</span><em>filename</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.get_mos_dictionary"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.get_mos_dictionary" title="Permalink to this definition">¶</a></dt>
+<dd><p>Liest mos.txt File ein und gibt ein Dictionary mit Daten raus</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> – Filename eines Mos files</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">results     Dictionary mit den MOS-Daten</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.main">
+<code class="descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hauptfunktion führt Teilschritte nacheinander aus.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.mos_get_h5_part">
+<code class="descname">mos_get_h5_part</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.mos_get_h5_part"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.mos_get_h5_part" title="Permalink to this definition">¶</a></dt>
+<dd><p>File öffnen und Daten Laden, resamplen, evlt. interpolieren [1min].</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.pack_mosdata">
+<code class="descname">pack_mosdata</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.pack_mosdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.pack_mosdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>MOS Daten wieder zippen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.plausa_mos">
+<code class="descname">plausa_mos</code><span class="sig-paren">(</span><em>mos_dict</em>, <em>new_r</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.plausa_mos"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.plausa_mos" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks MOS on plausability. Treat Zollenspieker &amp; Geesthacht with
+higher tresholds.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>mos_dict</strong> (<em>Dictionary</em>) – Dictionary with MOS-Data</li>
+<li><strong>new_r</strong> (<em>List</em>) – Valid “Rückfall-Positionen” (Ohne Fehlerwerte)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">If MOS-Data is plausible</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.mos.prepare_mosdata">
+<code class="descname">prepare_mosdata</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#mos.prepare_mosdata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.mos.prepare_mosdata" title="Permalink to this definition">¶</a></dt>
+<dd><p>MOS Daten aus Archiv vorbereiten. Entpacken und die nächste
+Datei vom Zeitpunkt aus gesehen auswählen.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.nwhw.__init__">
+<code class="descclassname">nwhw.</code><code class="descname">__init__</code><span class="sig-paren">(</span><em>zeitpunkt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#nwhw.__init__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.nwhw.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Nächstgelegene Manueller Vorhersage aus Archiv holen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>zeitpunkt</strong> – Zeitpunkt zur Betrachtung</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="mancurve.data_feeder.nwhw">
+<em class="property">class </em><code class="descclassname">mancurve.data_feeder.</code><code class="descname">nwhw</code><span class="sig-paren">(</span><em>zeitpunkt</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#nwhw"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.nwhw" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="mancurve.data_feeder.nwhw.get_file">
+<code class="descname">get_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#nwhw.get_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.nwhw.get_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>File aus Archiv laden (linwvd10). Vorerst nach Zeitpunkt auswählen.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="mancurve.data_feeder.nwhw.load_file">
+<code class="descname">load_file</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/data_feeder.html#nwhw.load_file"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.data_feeder.nwhw.load_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dateien in temporären Ordner verschieben und dne Filenamen ausgeben</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-mancurve.validation">
+<span id="paket-zur-validation-plots-statistik"></span><h1>Paket zur Validation (Plots &amp; Statistik)<a class="headerlink" href="#module-mancurve.validation" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="mancurve.validation.import_data">
+<code class="descclassname">mancurve.validation.</code><code class="descname">import_data</code><span class="sig-paren">(</span><em>file</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/validation.html#import_data"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.validation.import_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>HDF5 Datei importieren und Plots erzeugen. Es werden alle Initialisierungs-
+Zeiten als eine Kurve dargestellt. Daneben wird die Beobachtung aufgetragen.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>file</strong> (<em>String</em>) – Dateiname</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="mancurve.validation.main">
+<code class="descclassname">mancurve.validation.</code><code class="descname">main</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/mancurve/validation.html#main"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#mancurve.validation.main" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hauptfunktion. Hier werden alle Intialisierungszeiten in einem Array
+gesammelt, um sie statistisch auszuwerten. Dies könnte auf alle Daten
+erweitert werden.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>data</strong> (<em>string</em>) – file</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020, Luis Becker
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

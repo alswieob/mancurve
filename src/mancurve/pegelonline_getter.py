@@ -7,6 +7,13 @@ import requests
 
 class pegelonline_timeseries():
     def __init__(self,pegel_id, storedir):
+        """ Starts Class-Object and directly loads newest data for one location.
+        
+        :param pegel_id: BSH-Pegelnummer
+        :param storedir: Speicherort
+        :type pegel_id: string
+        :type storedir: string
+        """   
         self.pid = pegel_id
         self.a_dir = storedir
         
@@ -42,13 +49,7 @@ class pegelonline_timeseries():
                                              columns = ['waterlevel'])    
          
     def read_pegelonline(self):
-            """ Reads Pegelonline.txt File.
-    
-            :param po_file: Filename
-            :type po_file:  String
-            
-            :return dates_time, pon_data: Arrays with datetime objects, data
-            :rtype: Numpy Array
+            """ Reads and checks Pegelonline.txt File.
             """          
             with open(self.pon_filename, 'rb') as inp:
                 decoded_inp   = [x.decode("ISO-8859-1") for x in inp]
@@ -113,12 +114,8 @@ class pegelonline_timeseries():
             return pon_data, dates_times
                     
     def get_newest_data(self):
-            """ Download newest numerical Model data (HBM), MOS data 
-            and obersavtion data (pegelonline). Data will be stored in the
-            "self.a_dir" directory.
-            
-            MOS-Data is copied from linwvd10 server.
-            Model-data is copied from opmod directory.
+            """ Download newest numerical oberservation 
+            data (pegelonline). Data will be stored in the  "self.a_dir" directory.
             
             Pegelonline data is downloaded from www.pegelonline.wsv.de
             """         
