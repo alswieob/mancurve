@@ -16,7 +16,7 @@ Recommendation: Create virtual environment and install requirements file:
 
 "git clone https://github.com/alswieob/mancurve.git"
 
-2. Change Directory to /mancurve
+2. Go into ./mancurve
 
 3. Install requirements.txt to your python environment using conda
 
