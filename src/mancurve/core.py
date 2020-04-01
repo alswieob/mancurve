@@ -45,6 +45,7 @@ class combine_curves():
         self.FNULL = open(os.devnull, 'w')
         self.aim_dir = os.path.abspath('../../data/temp/')
         self.aim_dir = os.path.join(self.aim_dir, '')
+        self.trace_data = {} # Für BSH-Homepage alle Daten sammeln
         
     def clear_old_data(self):
         '''
@@ -133,6 +134,7 @@ class combine_curves():
         :type zeitpunkt: datetime object
         
         '''
+        self.download = download
         if download:
             # NWHW
             cmd = ("ssh bm11mos@linwvd10 ls "
@@ -172,6 +174,8 @@ class combine_curves():
         
         self.MHW = {}
         self.MNW = {}
+        self.PNP = {}
+        self.SKN = {}
         for pegel in self.stations:
             # Immer dieses und nächstes Jahr berücksichtigen
             year = dt.datetime.now().strftime('%Y')
@@ -219,6 +223,12 @@ class combine_curves():
         '''
         with open(filename, mode = 'rb') as f:
             for idx,line in enumerate(f):
+                if idx == 16:
+                    self.PNP[pegel] = \
+                        float(re.findall(r'\d.\d\d',str(line))[0])
+                if idx == 17:
+                    self.SKN[pegel] = \
+                        float(re.findall(r'\d.\d\d',str(line))[0])
                 if idx == 21:
                     self.MHW[pegel] = \
                             float(re.findall(r'\d.\d\d',str(line))[0])
@@ -267,7 +277,8 @@ class combine_curves():
                 self.mos_filename = filename
                 self.pegel_name = pegel
                 self.load_mos()              
-                self.old_mos[pegel] = self.mos_data[pegel].copy()                
+                self.old_mos[pegel] = self.mos_data[pegel].copy()  
+                        
         else:
             x = df.mos(zeitpunkt = zeitpunkt, freq=15)
             x.main()
@@ -278,6 +289,8 @@ class combine_curves():
                 self.mos_data[pegel] = data[pegel]  
                 self.old_mos[pegel] = self.mos_data[pegel].copy()  
             self.mos_errstate = x.mos_errstate
+            
+
                
     def read_NWHW(self):
         '''Manuelle Vorhersage-Datei lesen
@@ -293,7 +306,14 @@ class combine_curves():
             if name not in data:
                 data[name]      = []
                 timearray[name] = []
-                       
+                   
+            if idx== 0:
+                dt_obj_Timezoned = timezone('Europe/Berlin').localize(
+                    dt.datetime.strptime(x[idx,2]," %Y%m%d%H%M "))
+                utc_datetime = dt_obj_Timezoned.astimezone(timezone('UTC'))  
+                utc_datetime = utc_datetime.replace(tzinfo=None)     
+                self.nwhw_init = utc_datetime
+                
             er    = x[idx,0][-3:-1] 
             dt_obj_Timezoned = timezone('Europe/Berlin').localize(
                     dt.datetime.strptime(x[idx,1],"%Y%m%d%H%M%S"))
@@ -444,6 +464,8 @@ class combine_curves():
                        mos_file_data[new_r[0]] )                  
             self.mos_errstate[self.pegel_name] = 0
             
+ 
+        
         # MOS / Astronomischer Zeit Array               
         time_array =  [(dt.datetime.strptime(mos_file_data['datestamp'][x]+
                         mos_file_data['init_time'][x],'%Y%m%d%H%M') + 
@@ -454,8 +476,15 @@ class combine_curves():
         self.mos_data[self.pegel_name] =  pd.DataFrame(mos_WL,
                      index = time_array,
                      columns = ['waterlevel'])   
-
-    
+        
+        # Raw data speichern
+        self.trace_data['mos'+self.pegel_name] =  \
+                                    self.mos_data[self.pegel_name].copy()*100     
+        self.trace_data['ast'+self.pegel_name] = \
+                                    pd.DataFrame(mos_file_data['pegel']*100,
+                                              index = time_array,
+                                              columns = ['waterlevel'])     
+        
     def get_obs(self,download = False,zeitpunkt = dt.datetime(2020,2,1,12,16)):
         ''' Beobachtungsdaten etnweder direkt von Pegelonline laden oder
         aus dem Archiv beziehen. Für den Download-Fall das Hilfspaket laden
@@ -809,10 +838,84 @@ class combine_curves():
                              'CombinedForecastUTC')
 
         plt.close('all')
+        
+        # Für Internet
+        # Spezielle CSV Datei für Tableau Output: UTC + Zentimeter
+        #bshnr	 datum	 messung	 astro	 stauPN	 mosdatum	 pos	 NHN	 SKN
+        
+        if self.download:
+            # Neuer Zeitindex
+            beob_start = self.po[key].data.index[-1] - dt.timedelta(hours=14)
+            manc_end   = self.NWHW[key].index[-1] + dt.timedelta(days = .5)
+            min_freq   = pd.date_range(beob_start,manc_end, freq='60S')
+            comb_freq  = min_freq.union(self.trace_data['mos'+key].index[
+                        ~self.trace_data['mos'+key].index.isin(min_freq)])
+                    
+            #1. Create dataframe with all data
+            store = pd.DataFrame({'bshnr': key[4:],
+                   'datum' : comb_freq,
+                   'messung': (
+                       self.po[key].data['waterlevel']*100).astype(int),
+                   'astro':(
+                       self.trace_data['ast'+key]['waterlevel']).astype(int),
+                   'stauPN':(
+                       self.trace_data['mos'+key]['waterlevel']).astype(int),
+                   'mosdatum': dt.datetime.now().replace(microsecond=0), 
+                   'pos':'Normal',
+                   'NHN': (self.trace_data['mos'+key]['waterlevel']-
+                           self.PNP[key]*100).astype(int) ,
+                   'SKN': (self.trace_data['mos'+key]['waterlevel']-
+                           self.SKN[key]*100).astype(int) ,
+                   'manuell': (self.complete_mos['waterlevel'].loc[
+                           self.po[key].data.index[-1]:]*100).astype(int)},
+                    index=comb_freq)
+            
+            store.index.name = 'datum'
+            
+            if os.path.exists('../../data/output/'+'tableau_Nordsee31.csv'):
+                header = False
+            else:
+                header = True
+            
+            store.to_csv(
+                    os.path.abspath('../../data/output/'+
+                                    'tableau_Nordsee31.csv'),
+                    float_format ="%.0f", mode = 'a', index = False,
+                    header = header)
+            
+            # Create manual Tableau file
+            #1. Create dataframe with all data
+            #bshnr	 Datum	 Wert	 Abweichung	 Vorhersage	 MOS_UTC	 MOS_GZ	 Warnung	Notiz
+            store = pd.DataFrame({'bshnr': key[4:],
+                   'Datum' : self.NWHW[key].index,
+                   'Wert': (self.NWHW[key]['avg']*100).astype(int),
+                   'Abweichung':(self.NWHW[key]['range']*200).astype(int),
+                   'Vorhersage': self.nwhw_init,
+                   'MOS_UTC': dt.datetime.strptime(
+                        self.mos_filename.split('.')[0][-17:-5],'%Y%m%d%H%M'), 
+                   'MOS_GZ':  (dt.datetime.strptime(
+                        self.mos_filename.split('.')[0][-17:-5],'%Y%m%d%H%M')+
+                        dt.timedelta(hours=1)), 
+                   'Warnung': 'Normal',
+                   'Notiz': ''},
+                    index=self.NWHW[key].index)
+            
+            store.to_csv(
+                    os.path.abspath('../../data/output/'+
+                                    'tableauHWNW_Vorhersage31.csv'),
+                    float_format ="%.0f", mode = 'a', index = False,
+                    header = header)
 
 if __name__ == '__main__':
-    d = False
+    d = True
         
+    try:
+        os.remove(os.path.abspath('../../data/output/'+
+                                  'tableau_Nordsee31.csv'))
+        os.remove(os.path.abspath('../../data/output/'+
+                                  'tableauHWNW_Vorhersage31.csv'))
+    except:
+        pass
     #zeitpunkt = dt.datetime(2017,10,29,7,00)
     zeitpunkt = dt.datetime(2020,2,10,9,00)
     stime1 = time.time()
