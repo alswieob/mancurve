@@ -908,7 +908,10 @@ class combine_curves():
 
 if __name__ == '__main__':
     d = True
-        
+    #zeitpunkt = dt.datetime(2017,10,29,7,00)
+    zeitpunkt = dt.datetime(2020,2,10,9,00)
+    stime1 = time.time()
+       
     try:
         os.remove(os.path.abspath('../../data/output/'+
                                   'tableau_Nordsee31.csv'))
@@ -916,9 +919,7 @@ if __name__ == '__main__':
                                   'tableauHWNW_Vorhersage31.csv'))
     except:
         pass
-    #zeitpunkt = dt.datetime(2017,10,29,7,00)
-    zeitpunkt = dt.datetime(2020,2,10,9,00)
-    stime1 = time.time()
+
     x = combine_curves()
     
     print('# GET DATA #')   
