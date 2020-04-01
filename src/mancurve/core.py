@@ -782,7 +782,7 @@ class combine_curves():
                    Linewidth=0.5,zorder=0, alpha=.6)
         
         
-        ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .25),
+        ax.set_xlim([self.NWHW[key].index[0] - dt.timedelta(days = .5),
                      self.NWHW[key].index[-1] + dt.timedelta(days = .25)])
         
         '''
