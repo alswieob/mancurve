@@ -881,7 +881,8 @@ class combine_curves():
                     os.path.abspath('../../data/output/'+
                                     'tableau_Nordsee31.csv'),
                     float_format ="%.0f", mode = 'a', index = False,
-                    header = header)
+                    header = header, sep=';')
+           
             
             # Create manual Tableau file
             #1. Create dataframe with all data
@@ -904,7 +905,7 @@ class combine_curves():
                     os.path.abspath('../../data/output/'+
                                     'tableauHWNW_Vorhersage31.csv'),
                     float_format ="%.0f", mode = 'a', index = False,
-                    header = header)
+                    header = header, sep=';')
 
 if __name__ == '__main__':
     d = True
