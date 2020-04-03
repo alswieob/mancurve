@@ -350,8 +350,28 @@ class combine_curves():
                            (data[name]['avg'] <= 1.5), 'range'] = .125
             data[name].loc[abs(data[name]['avg']) > 1.5, 'range'] = .25
             
-            self.NWHW[name] = data[name]             
-     
+            # Warnung festlegen
+            data[name].loc[(data[name]['avg'] < 1.5)
+                            & (data[name]['Ereignis'] == 'HW'), 'Warnung'
+                            ] = "Normal"
+            data[name].loc[(data[name]['avg'] > 1.5) &
+                  (data[name]['avg'] < 2.5)
+                & (data[name]['Ereignis'] == 'HW'), 'Warnung'] = "Sturmflut"
+            data[name].loc[(data[name]['avg'] > 2.5) &
+                (data[name]['avg'] < 3.5)
+                & (data[name]['Ereignis'] == 'HW')
+                , 'Warnung'] = "Schwere Sturmflut"
+            data[name].loc[(data[name]['avg'] > 3.5)
+                & (data[name]['Ereignis'] == 'HW')] = "Sehr schwere Sturmflut"
+            data[name].loc[data[name]['Ereignis'] == 'NW',
+                           'Warnung'] = "Normal"
+            
+            # Make sure, dtype is correct
+            self.NWHW[name] = data[name].astype({'avg': 'float64',
+                                                 'Von': 'float64',
+                                                 'Bis': 'float64',
+                                                 'range': 'float64'})
+            
     def load_mos(self):
         """ Loads MOS. Starts checking routines (plausability).
         Attaches the data to attributes of class instance.
@@ -613,15 +633,15 @@ class combine_curves():
                 
             # Merge MHW, MNW to Manual forecast dataframe
             for i in ['Von','Bis', 'avg']:
-                for j in ['NW','HW']:
-                    if j == 'NW':
+                for j in ['NW','HW']:                            
+                    if j == 'NW':                        
                         self.NWHW[key].loc[self.NWHW[key]['Ereignis'] == j,
                                   i] += self.MNW[key]
                         
                     else:
                         self.NWHW[key].loc[self.NWHW[key]['Ereignis'] == j,
                                   i] += self.MHW[key]  
-             
+            
             # Manual forecast on MOS Index
             mf = pd.DataFrame(self.NWHW[key].copy(), index=mos.index.copy(),
                               columns = self.NWHW[key].columns.copy()) 
@@ -630,7 +650,7 @@ class combine_curves():
             mf['IDX']      = np.arange(len(mf.index))
             mf             = mf.dropna()
             self.NWHW[key] = mf.copy()
-                 
+            
             # Manuelle Vorhersage auf MOS HW/NW Zeitpunkt verschieben
             # Hierzu die lokalen Maxima/Minima um den manuellen Zeitpunkt finden
             new_index = []
@@ -654,7 +674,6 @@ class combine_curves():
             # Nans rauswerfen
             mf             = mf.dropna()
             self.NWHW[key] = mf.copy()
-                
             # Ignore 1. Manual forecast, if it is to close to observation
             # or if it is in the past
             if self.obs_errstate[key] < 1:
@@ -812,7 +831,7 @@ class combine_curves():
         plt.legend(loc="upper right", scatterpoints=1, prop={'size': 6})
         plt.savefig(os.path.abspath('../../data/figs/'+key+'.png'),dpi=96)
         #plt.show()     
-
+        
         if self.obs_errstate[key] < 1:
             start = self.po[key].data.index[-1] + dt.timedelta(minutes=1)
         else:
@@ -828,15 +847,13 @@ class combine_curves():
                            keys=[key+'_MC',
                                  key+'_MAN',
                                  key+'_MANUNC'])
-       
-        
+              
         store.index.name = 'Timestamp'
         
         store = store.loc[start:
                 self.NWHW[key].index[0] + dt.timedelta(days = 1.5)]
         store.to_hdf(os.path.abspath('../../data/output/'+key+'.h5'),
                              'CombinedForecastUTC')
-
         plt.close('all')
         
         # Für Internet
@@ -872,14 +889,14 @@ class combine_curves():
             
             store.index.name = 'datum'
             
-            if os.path.exists('../../data/output/'+'tableau_Nordsee31.csv'):
+            if os.path.exists('../../data/output/'+'tableau_NordseeUTC.csv'):
                 header = False
             else:
                 header = True
             
             store.to_csv(
                     os.path.abspath('../../data/output/'+
-                                    'tableau_Nordsee31.csv'),
+                                    'tableau_NordseeUTC.csv'),
                     float_format ="%.0f", mode = 'a', index = False,
                     header = header, sep=';')
            
@@ -897,13 +914,13 @@ class combine_curves():
                    'MOS_GZ':  (dt.datetime.strptime(
                         self.mos_filename.split('.')[0][-17:-5],'%Y%m%d%H%M')+
                         dt.timedelta(hours=1)), 
-                   'Warnung': 'Normal',
+                   'Warnung': self.NWHW[key]['Warnung'],
                    'Notiz': ''},
                     index=self.NWHW[key].index)
             
             store.to_csv(
                     os.path.abspath('../../data/output/'+
-                                    'tableauHWNW_Vorhersage31.csv'),
+                                    'tableauHWNW_VorhersageUTC.csv'),
                     float_format ="%.0f", mode = 'a', index = False,
                     header = header, sep=';')
 
@@ -915,9 +932,9 @@ if __name__ == '__main__':
        
     try:
         os.remove(os.path.abspath('../../data/output/'+
-                                  'tableau_Nordsee31.csv'))
+                                  'tableau_NordseeUTC.csv'))
         os.remove(os.path.abspath('../../data/output/'+
-                                  'tableauHWNW_Vorhersage31.csv'))
+                                  'tableauHWNW_VorhersageUTC.csv'))
     except:
         pass
 
