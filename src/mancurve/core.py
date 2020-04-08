@@ -519,7 +519,7 @@ class combine_curves():
         self.po = {}
         self.obs_errstate = {}
         if download:
-            for key in self.stations:            
+            for key in self.stations:                               
                 try:
                     store_dir = os.path.join(os.getcwd(), self.aim_dir)
                     self.po[key] = obs.pegelonline_timeseries(key, store_dir)
@@ -872,19 +872,19 @@ class combine_curves():
             store = pd.DataFrame({'bshnr': key[4:],
                    'datum' : comb_freq,
                    'messung': (
-                       self.po[key].data['waterlevel']*100).astype(int),
+                       self.po[key].data['waterlevel']*100),
                    'astro':(
-                       self.trace_data['ast'+key]['waterlevel']).astype(int),
+                       self.trace_data['ast'+key]['waterlevel']),
                    'stauPN':(
-                       self.trace_data['mos'+key]['waterlevel']).astype(int),
+                       self.trace_data['mos'+key]['waterlevel']),
                    'mosdatum': dt.datetime.now().replace(microsecond=0), 
                    'pos':'Normal',
                    'NHN': (self.trace_data['mos'+key]['waterlevel']-
-                           self.PNP[key]*100).astype(int) ,
+                           self.PNP[key]*100) ,
                    'SKN': (self.trace_data['mos'+key]['waterlevel']-
-                           self.SKN[key]*100).astype(int) ,
+                           self.SKN[key]*100) ,
                    'manuell': (self.complete_mos['waterlevel'].loc[
-                           self.po[key].data.index[-1]:]*100).astype(int)},
+                           self.po[key].data.index[-1]:]*100)},
                     index=comb_freq)
             
             store.index.name = 'datum'
@@ -897,17 +897,16 @@ class combine_curves():
             store.to_csv(
                     os.path.abspath('../../data/output/'+
                                     'tableau_NordseeUTC.csv'),
-                    float_format ="%.0f", mode = 'a', index = False,
+                    float_format ="%i", mode = 'a', index = False, #"%.0f"
                     header = header, sep=';')
            
-            
             # Create manual Tableau file
             #1. Create dataframe with all data
             #bshnr	 Datum	 Wert	 Abweichung	 Vorhersage	 MOS_UTC	 MOS_GZ	 Warnung	Notiz
             store = pd.DataFrame({'bshnr': key[4:],
                    'Datum' : self.NWHW[key].index,
-                   'Wert': (self.NWHW[key]['avg']*100).astype(int),
-                   'Abweichung':(self.NWHW[key]['range']*200).astype(int),
+                   'Wert': (self.NWHW[key]['avg']*100),
+                   'Abweichung':(self.NWHW[key]['range']*200),
                    'Vorhersage': self.nwhw_init,
                    'MOS_UTC': dt.datetime.strptime(
                         self.mos_filename.split('.')[0][-17:-5],'%Y%m%d%H%M'), 

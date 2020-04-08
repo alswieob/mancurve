@@ -90,11 +90,11 @@ class pegelonline_timeseries():
                         where_to_replace  = np.where(diff > 50)
                         where_to_replace2 = np.squeeze(where_to_replace) + 1 
                         where_to_replace3 = np.squeeze(where_to_replace) - 1 
+                        where_to_replace3 = np.atleast_1d(where_to_replace3)             
                         if any(where_to_replace3 < 0):                            
                             where_to_replace3 = np.clip(where_to_replace3,
                                                         0,100000)
-                            check_pegel[0] = np.nan
-                            
+                            check_pegel[0] = np.nan   
                         # Hängengebliebnen pegel ersetzen
                         where_to_replace4 = np.where(diff == 0)                   
                         check_pegel[1:][where_to_replace] = np.nan
