@@ -1,4 +1,5 @@
-# -*- coding: utf-8 -*-
+#!/home/bm1483/.conda/envs/my_py/bin/python
+
 """
 This script runs the operational manual waterlevel forecast curve construction.
 It can be executed from the command line.
@@ -23,6 +24,11 @@ from scipy.signal import savgol_filter
 __author__ = "Luis Becker"
 __copyright__ = "Luis Becker"
 __license__ = "mit"
+
+
+# Important for cronjob
+dir_path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(dir_path)
 
 class Object(object):
     '''
