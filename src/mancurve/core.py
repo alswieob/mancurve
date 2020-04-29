@@ -295,16 +295,13 @@ class combine_curves():
                 self.mos_data[pegel] = data[pegel]  
                 self.old_mos[pegel] = self.mos_data[pegel].copy()  
             self.mos_errstate = x.mos_errstate
-            
-
-               
+                           
     def read_NWHW(self):
         '''Manuelle Vorhersage-Datei lesen
         
         '''
         self.NWHW = {}     
         x = np.genfromtxt(self.filename,dtype=str, delimiter = [12,14,14,16])
-        
         self.stations = ['pgl_'+y[1:5] for y in x[:,0]]
         data = {}
         timearray = {}
@@ -328,8 +325,7 @@ class combine_curves():
             timearray[name].append(utc_datetime)
 
             values = [float(x.replace(',','.')) for x in 
-                      re.findall(r"[+-]?\d+(?:\,\d+)?",x[idx,3])]
-            
+                      re.findall(r"[+-]?\d+(?:\,\d+)?",x[idx,3])]            
             if len(values) >1:
                 if values[0] > values[1]:
                     value_low,value_high = values[1],values[0]
@@ -338,14 +334,16 @@ class combine_curves():
             else:
                 value_low,value_high = values[0],values[0]
                 
-            data[name].append((er,value_low,value_high))
+            orig_value = x[idx,3].strip()
+                
+            data[name].append((er,value_low,value_high,orig_value))
             
         self.stations = np.unique(self.stations)
         for name in self.stations:
             data[name] = np.array(data[name])
             data[name] = pd.DataFrame(data[name],
                      index = timearray[name],
-                     columns = ['Ereignis','Von', 'Bis'])      
+                     columns = ['Ereignis','Von', 'Bis','Original'])      
             data[name][["Von", "Bis"]] = \
                         data[name][["Von", "Bis"]].apply(pd.to_numeric)
             data[name]['avg']   = data[name][['Von', 'Bis']].mean(axis=1)
@@ -376,7 +374,8 @@ class combine_curves():
             self.NWHW[name] = data[name].astype({'avg': 'float64',
                                                  'Von': 'float64',
                                                  'Bis': 'float64',
-                                                 'range': 'float64'})
+                                                 'range': 'float64',
+                                                 'Original': 'str'})
             
     def load_mos(self):
         """ Loads MOS. Starts checking routines (plausability).
@@ -911,7 +910,8 @@ class combine_curves():
             #bshnr	 Datum	 Wert	 Abweichung	 Vorhersage	 MOS_UTC	 MOS_GZ	 Warnung	Notiz
             store = pd.DataFrame({'bshnr': key[4:],
                    'Datum' : self.NWHW[key].index,
-                   'Wert': (self.NWHW[key]['avg']*100),
+                   'Wert': (self.NWHW[key]['avg']*100
+                            -(self.NWHW[key]['range']*100)),                   # Wert ist unteres Ende des Kästenchens in der Abbildung (Mitte - halbe Abweichung)
                    'Abweichung':(self.NWHW[key]['range']*200),
                    'Vorhersage': self.nwhw_init,
                    'MOS_UTC': dt.datetime.strptime(
@@ -928,7 +928,25 @@ class combine_curves():
                                     'tableauHWNW_VorhersageUTC.csv'),
                     float_format ="%.0f", mode = 'a', index = False,
                     header = header, sep=';')
-
+                    
+            # Create extra manual Tableau file
+            # HWNW_tourismusUTC.csv
+            #101P;WV;s0;NW;20200429083000;202004290746;-0,1 m
+            store = pd.DataFrame({'bshnr': key[4:],
+                   'Art': 'WV',                  
+                   'Unknown':'s0',
+                   'Ereignis': self.NWHW[key]['Ereignis'],
+                   'Datum' : self.NWHW[key].index,
+                   'MOS_UTC': self.nwhw_init,
+                   'Über MNW/MHW': self.NWHW[key]['Original']},
+                    index=self.NWHW[key].index)
+            
+            store.to_csv(
+                    os.path.abspath('../../data/output/'+
+                                    'HWNW_tourismusUTC.txt'),
+                    float_format ="%.0f", mode = 'a', index = False,
+                    header = False, sep=';')
+                    
 if __name__ == '__main__':
     d = True
     #zeitpunkt = dt.datetime(2017,10,29,7,00)
@@ -940,6 +958,8 @@ if __name__ == '__main__':
                                   'tableau_NordseeUTC.csv'))
         os.remove(os.path.abspath('../../data/output/'+
                                   'tableauHWNW_VorhersageUTC.csv'))
+        os.remove(os.path.abspath('../../data/output/'+
+                          'HWNW_tourismusUTC.txt'))
     except:
         pass
 
